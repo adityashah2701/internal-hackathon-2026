@@ -62,7 +62,7 @@ class SupabaseNotificationRepository implements INotificationRepository {
   @override
   Future<int> getUnreadCount(String userId) async {
     try {
-      final sb.PostgrestResponse response = await _safeClient
+      final sb.PostgrestResponse<dynamic> response = await _safeClient
           .from('notifications')
           .select()
           .eq('user_id', userId)

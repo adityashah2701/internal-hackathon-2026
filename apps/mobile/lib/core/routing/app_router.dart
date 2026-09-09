@@ -9,10 +9,26 @@ import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/common/presentation/splash_screen.dart';
 import '../../features/cooperative/presentation/cooperative_home_screen.dart';
-import '../../features/customer/presentation/customer_home_screen.dart';
 import '../../features/federation/presentation/federation_home_screen.dart';
 import '../../features/verification/presentation/verification_screen.dart';
-import '../../features/worker/presentation/worker_home_screen.dart';
+
+// Customer Shell & Tabs
+import '../../features/customer/presentation/customer_shell.dart';
+import '../../features/customer/presentation/tabs/customer_home_tab.dart';
+import '../../features/customer/presentation/tabs/customer_services_tab.dart';
+import '../../features/customer/presentation/tabs/customer_bookings_tab.dart';
+import '../../features/customer/presentation/tabs/customer_alerts_tab.dart';
+import '../../features/customer/presentation/tabs/customer_profile_tab.dart';
+
+// Worker Shell & Tabs
+import '../../features/worker/presentation/worker_shell.dart';
+import '../../features/worker/presentation/tabs/worker_home_tab.dart';
+import '../../features/worker/presentation/tabs/worker_jobs_tab.dart';
+import '../../features/worker/presentation/tabs/worker_earnings_tab.dart';
+import '../../features/worker/presentation/tabs/worker_alerts_tab.dart';
+import '../../features/worker/presentation/tabs/worker_profile_tab.dart';
+import '../../features/worker/presentation/active_job_screen.dart';
+
 import 'app_routes.dart';
 
 /// Listenable that notifies GoRouter when auth state changes in Riverpod
@@ -59,19 +75,123 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => const OnboardingScreen(),
       ),
 
-      // Role-Based Home Routes
-      GoRoute(
-        path: AppRoutes.customerDashboard,
-        builder: (BuildContext context, GoRouterState state) => const CustomerHomeScreen(),
+      // =======================================================
+      // Customer Stateful Shell Route (Bottom Navigation)
+      // =======================================================
+      StatefulShellRoute.indexedStack(
+        builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {
+          return CustomerShell(navigationShell: navigationShell);
+        },
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.customerDashboard,
+                builder: (BuildContext context, GoRouterState state) => const CustomerHomeTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.customerServices,
+                builder: (BuildContext context, GoRouterState state) => const CustomerServicesTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.customerBookings,
+                builder: (BuildContext context, GoRouterState state) => const CustomerBookingsTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.customerAlerts,
+                builder: (BuildContext context, GoRouterState state) => const CustomerAlertsTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.customerProfile,
+                builder: (BuildContext context, GoRouterState state) => const CustomerProfileTab(),
+              ),
+            ],
+          ),
+        ],
       ),
-      GoRoute(
-        path: AppRoutes.workerDashboard,
-        builder: (BuildContext context, GoRouterState state) => const WorkerHomeScreen(),
+
+      // =======================================================
+      // Worker Stateful Shell Route (Bottom Navigation)
+      // =======================================================
+      StatefulShellRoute.indexedStack(
+        builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {
+          return WorkerShell(navigationShell: navigationShell);
+        },
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.workerDashboard,
+                builder: (BuildContext context, GoRouterState state) => const WorkerHomeTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.workerJobs,
+                builder: (BuildContext context, GoRouterState state) => const WorkerJobsTab(),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'active/:id',
+                    builder: (BuildContext context, GoRouterState state) {
+                      final String bookingId = state.pathParameters['id']!;
+                      return ActiveJobScreen(bookingId: bookingId);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.workerEarnings,
+                builder: (BuildContext context, GoRouterState state) => const WorkerEarningsTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.workerAlerts,
+                builder: (BuildContext context, GoRouterState state) => const WorkerAlertsTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.workerProfile,
+                builder: (BuildContext context, GoRouterState state) => const WorkerProfileTab(),
+              ),
+            ],
+          ),
+        ],
       ),
+
+      // Cooperative Admin
       GoRoute(
         path: AppRoutes.cooperativeDashboard,
         builder: (BuildContext context, GoRouterState state) => const CooperativeHomeScreen(),
       ),
+      // Federation Admin
       GoRoute(
         path: AppRoutes.federationDashboard,
         builder: (BuildContext context, GoRouterState state) => const FederationHomeScreen(),
@@ -138,14 +258,16 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         }
 
         // Prevent cross-role navigation if attempting to access a different role portal
-        final bool isAnotherRolePortal = (location == AppRoutes.customerDashboard && authState.profile.role != UserRole.customer) ||
-            (location == AppRoutes.workerDashboard && authState.profile.role != UserRole.worker) ||
-            (location == AppRoutes.cooperativeDashboard && authState.profile.role != UserRole.cooperativeAdmin) ||
-            (location == AppRoutes.federationDashboard && authState.profile.role != UserRole.federationAdmin);
+        // Since we now have sub-routes like /customer/bookings, we check if the path starts with the role portal
+        final bool isCustomerFlow = location.startsWith('/customer');
+        final bool isWorkerFlow = location.startsWith('/worker');
+        final bool isCoopFlow = location.startsWith('/cooperative');
+        final bool isFedFlow = location.startsWith('/federation');
 
-        if (isAnotherRolePortal) {
-          return roleHome;
-        }
+        if (isCustomerFlow && authState.profile.role != UserRole.customer) return roleHome;
+        if (isWorkerFlow && authState.profile.role != UserRole.worker) return roleHome;
+        if (isCoopFlow && authState.profile.role != UserRole.cooperativeAdmin) return roleHome;
+        if (isFedFlow && authState.profile.role != UserRole.federationAdmin) return roleHome;
 
         return null;
       }

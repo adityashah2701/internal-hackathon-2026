@@ -195,7 +195,7 @@ alter table public.bookings
 alter table public.bookings
   add constraint bookings_status_check
   check (status in (
-    'requested', 'accepted', 'scheduled', 'in_progress',
+    'requested', 'accepted', 'scheduled', 'arrived', 'in_progress',
     'completed', 'payment_confirmed', 'reviewed',
     'rejected', 'cancelled', 'expired'
   ));

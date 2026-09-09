@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
 import '../../../data/models/service_category.dart';
+import '../../common/presentation/widgets/empty_state.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../common/presentation/notification_screen.dart';
 import '../controllers/customer_booking_controller.dart';
@@ -233,21 +234,31 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
               const SizedBox(height: 12),
 
               // Categories Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.15,
+              if (state.filteredCategories.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: EmptyStateWidget(
+                    icon: Icons.search_off_rounded,
+                    title: 'No Services Found',
+                    subtitle: 'Try adjusting your search criteria.',
+                  ),
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.15,
+                  ),
+                  itemCount: state.filteredCategories.length,
+                  itemBuilder: (BuildContext ctx, int index) {
+                    final ServiceCategory cat = state.filteredCategories[index];
+                    return _buildCategoryCard(context, cat, isDark);
+                  },
                 ),
-                itemCount: state.filteredCategories.length,
-                itemBuilder: (BuildContext ctx, int index) {
-                  final ServiceCategory cat = state.filteredCategories[index];
-                  return _buildCategoryCard(context, cat, isDark);
-                },
-              ),
               const SizedBox(height: 28),
 
               // Active & Recent Bookings Header

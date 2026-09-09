@@ -200,7 +200,6 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
     }
   }
 
-  /// Cancel a booking (only allowed for 'requested' status).
   Future<void> cancelBooking(String bookingId, {String? reason}) async {
     try {
       final IBookingRepository repo = ref.read(bookingRepositoryProvider);
@@ -209,6 +208,19 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
       state = state.copyWith(successMessage: 'Booking cancelled.');
     } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to cancel booking: $e');
+    }
+  }
+
+  Future<void> updateBookingStatus(String bookingId, BookingStatus status) async {
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.updateBookingStatus(
+        bookingId: bookingId,
+        status: status,
+      );
+      await loadCustomerBookings();
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'Failed to update booking status: $e');
     }
   }
 

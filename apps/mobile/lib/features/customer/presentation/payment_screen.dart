@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
-import '../../../data/models/payment.dart';
-import '../../../data/repositories/booking_repository.dart';
-import '../../../data/repositories/payment_repository.dart';
 import '../controllers/customer_booking_controller.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
@@ -20,53 +20,94 @@ class PaymentScreen extends ConsumerStatefulWidget {
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool _isProcessing = false;
   String? _errorMessage;
+  late Razorpay _razorpay;
 
-  Future<void> _processSandboxPayment() async {
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      await Supabase.instance.client.functions.invoke(
+        'verify-razorpay-payment',
+        body: {
+          'razorpay_order_id': response.orderId,
+          'razorpay_payment_id': response.paymentId,
+          'razorpay_signature': response.signature,
+          'booking_id': widget.booking.id,
+        },
+      );
+
+      await ref.read(customerDashboardProvider.notifier).loadCustomerBookings();
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+        _errorMessage = 'Payment verification failed: $e';
+      });
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() {
+      _isProcessing = false;
+      _errorMessage = 'Payment failed: ${response.message}';
+    });
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    // Optional handle external wallet
+  }
+
+  Future<void> _processRazorpayPayment() async {
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
 
     try {
-      final IPaymentRepository paymentRepo = ref.read(paymentRepositoryProvider);
-      final IBookingRepository bookingRepo = ref.read(bookingRepositoryProvider);
-
-      // 1. Create order
-      final String orderId = await paymentRepo.createPaymentOrder(
-        bookingId: widget.booking.id,
-        amountInr: widget.booking.totalAmount,
+      final FunctionResponse res = await Supabase.instance.client.functions.invoke(
+        'create-razorpay-order',
+        body: {
+          'booking_id': widget.booking.id,
+          'amount': widget.booking.totalAmount * 100,
+        },
       );
 
-      // Simulate network delay for UI realism
-      await Future<void>.delayed(const Duration(seconds: 2));
+      final String orderId = (res.data as Map<String, dynamic>)['id'] as String;
+      final String razorpayKey = dotenv.env['RAZORPAY_API_KEY'] ?? '';
 
-      // 2. Verify payment (Simulated gateway callback)
-      final String mockPaymentId = 'pay_${DateTime.now().millisecondsSinceEpoch}';
-      final String mockSignature = 'sig_sandbox_valid';
+      final Map<String, dynamic> options = <String, dynamic>{
+        'key': razorpayKey,
+        'amount': widget.booking.totalAmount * 100,
+        'name': 'Sahayog Services',
+        'order_id': orderId,
+        'description': widget.booking.serviceTitle,
+        'prefill': <String, dynamic>{
+          'contact': '9999999999',
+          'email': 'customer@sahayog.coop'
+        },
+      };
 
-      await paymentRepo.verifyPayment(
-        bookingId: widget.booking.id,
-        gatewayOrderId: orderId,
-        gatewayPaymentId: mockPaymentId,
-        gatewaySignature: mockSignature,
-      );
-
-      // 3. Update booking status
-      await bookingRepo.updateBookingStatus(
-        bookingId: widget.booking.id,
-        status: BookingStatus.paymentConfirmed,
-      );
-
-      // Refresh customer dashboard
-      await ref.read(customerDashboardProvider.notifier).loadCustomerBookings();
-
-      if (mounted) {
-        Navigator.of(context).pop(true); // Return success
-      }
+      _razorpay.open(options);
     } catch (e) {
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Payment failed: $e';
+        _errorMessage = 'Failed to initialize payment: $e';
       });
     }
   }
@@ -165,7 +206,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ],
             const SizedBox(height: 40),
             ElevatedButton(
-              onPressed: _isProcessing ? null : _processSandboxPayment,
+              onPressed: _isProcessing ? null : _processRazorpayPayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

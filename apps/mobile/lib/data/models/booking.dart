@@ -2,6 +2,7 @@ enum BookingStatus {
   requested('requested', 'Requested', 'Awaiting worker acceptance'),
   accepted('accepted', 'Accepted', 'Worker has accepted the booking'),
   scheduled('scheduled', 'Scheduled', 'Service has been scheduled'),
+  arrived('arrived', 'Worker Arrived', 'Worker has arrived and needs OTP verification'),
   inProgress('in_progress', 'In Progress', 'Worker is currently performing the service'),
   completed('completed', 'Completed', 'Service fulfilled and verified'),
   paymentConfirmed('payment_confirmed', 'Payment Confirmed', 'Payment has been received and verified'),

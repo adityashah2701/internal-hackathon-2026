@@ -400,6 +400,24 @@ class WorkerDashboardNotifier extends AutoDisposeNotifier<WorkerDashboardState> 
     }
   }
 
+  Future<void> updateBookingStatus(String bookingId, BookingStatus status) async {
+    state = state.copyWith(isActionInProgress: true, clearError: true);
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.updateBookingStatus(bookingId: bookingId, status: status);
+      await loadBookings();
+      state = state.copyWith(
+        isActionInProgress: false,
+        successMessage: 'Status updated.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to update status: $e',
+      );
+    }
+  }
+
   Future<void> completeJob(String bookingId) async {
     state = state.copyWith(isActionInProgress: true, clearError: true);
     try {

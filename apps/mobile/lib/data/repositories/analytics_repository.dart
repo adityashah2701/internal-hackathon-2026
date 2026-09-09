@@ -72,7 +72,7 @@ class SupabaseAnalyticsRepository implements IAnalyticsRepository {
   @override
   Future<FederationMetrics> getFederationMetrics() async {
     try {
-      final dynamic response = await _safeClient.rpc('get_federation_metrics');
+      final dynamic response = await _safeClient.rpc<dynamic>('get_federation_metrics');
       if (response is Map<String, Object?>) {
         return FederationMetrics.fromJson(response);
       }
@@ -86,7 +86,7 @@ class SupabaseAnalyticsRepository implements IAnalyticsRepository {
   @override
   Future<int> getCompletedBookingCount() async {
     try {
-      final sb.PostgrestResponse response = await _safeClient
+      final sb.PostgrestResponse<dynamic> response = await _safeClient
           .from('bookings')
           .select()
           .inFilter('status', <String>['completed', 'payment_confirmed', 'reviewed'])

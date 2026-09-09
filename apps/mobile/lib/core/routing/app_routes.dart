@@ -10,9 +10,22 @@ abstract final class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String roleSelection = '/role-selection';
 
-  // Future Role-Specific Route Hubs
+  // Customer Hub
   static const String customerDashboard = '/customer';
+  static const String customerServices = '/customer/services';
+  static const String customerBookings = '/customer/bookings';
+  static const String customerAlerts = '/customer/alerts';
+  static const String customerProfile = '/customer/profile';
+
+  // Worker Hub
   static const String workerDashboard = '/worker';
+  static const String workerJobs = '/worker/jobs';
+  static const String workerActiveJob = '/worker/active-job';
+  static const String workerEarnings = '/worker/earnings';
+  static const String workerAlerts = '/worker/alerts';
+  static const String workerProfile = '/worker/profile';
+
+  // Cooperative & Federation Hubs (to be expanded later)
   static const String cooperativeDashboard = '/cooperative';
   static const String federationDashboard = '/federation';
 }
