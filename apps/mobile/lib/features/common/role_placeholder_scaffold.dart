@@ -93,37 +93,42 @@ class RolePlaceholderScaffold extends ConsumerWidget {
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: <Widget>[
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: roleColor.withValues(alpha: 0.15),
-                      child: Icon(roleIcon, size: 40, color: roleColor),
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: roleColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: roleColor.withValues(alpha: 0.2), width: 1.5),
+                      ),
+                      child: Icon(roleIcon, size: 38, color: roleColor),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Text(
                       profile?.fullName.isNotEmpty == true ? profile!.fullName : 'Active User',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       profile?.email ?? '',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       decoration: BoxDecoration(
-                        color: roleColor.withValues(alpha: 0.12),
+                        color: roleColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: roleColor.withValues(alpha: 0.4)),
+                        border: Border.all(color: roleColor.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         role.displayName.toUpperCase(),
                         style: TextStyle(
                           color: roleColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -137,17 +142,17 @@ class RolePlaceholderScaffold extends ConsumerWidget {
             // Feature Roadmap Info Card
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(18.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Row(
                       children: <Widget>[
-                        Icon(Icons.construction_outlined, color: roleColor, size: 22),
+                        Icon(Icons.layers_outlined, color: roleColor, size: 22),
                         const SizedBox(width: 10),
                         Text(
                           'Module Architecture Ready',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
@@ -155,35 +160,32 @@ class RolePlaceholderScaffold extends ConsumerWidget {
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                            height: 1.4,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.45,
                           ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Button to jump to system verification / diagnostics
             OutlinedButton.icon(
               onPressed: () => context.push(AppRoutes.verification),
-              icon: const Icon(Icons.analytics_outlined),
+              icon: const Icon(Icons.analytics_outlined, size: 18),
               label: const Text('Open System Diagnostics'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
             ),
             const SizedBox(height: 12),
 
-            // Sign Out button
-            FilledButton.icon(
+            // Sign Out button (Modern subtle outlined button)
+            OutlinedButton.icon(
               onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout_rounded, size: 18),
               label: const Text('Sign Out'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                backgroundColor: AppColors.error,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
               ),
             ),
           ],

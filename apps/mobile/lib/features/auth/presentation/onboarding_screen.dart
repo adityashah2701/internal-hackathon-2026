@@ -83,20 +83,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children: <Widget>[
               // Welcome Header
               Text(
-                'Welcome to Sahayog',
+                'Complete Your Profile',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      letterSpacing: -0.4,
                     ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Please set up your profile and choose your primary role to proceed into the cooperative marketplace.',
+                'Set up your essential details and select your primary role to enter the cooperative marketplace.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Full Name
               TextFormField(
@@ -104,7 +105,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Full Name *',
                   prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (String? value) {
                   if (value == null || value.trim().isEmpty) {
@@ -123,7 +123,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: 'Phone Number *',
                   prefixIcon: Icon(Icons.phone_outlined),
                   hintText: 'e.g. 9876543210',
-                  border: OutlineInputBorder(),
                 ),
                 validator: (String? value) {
                   if (value == null || value.trim().isEmpty) {
@@ -140,17 +139,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Role Selection Header
               Text(
-                'Choose Your Role *',
+                'Select Your Role *',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 12),
 
               // Customer Role Option
               _RoleSelectionCard(
-                title: 'Customer (Household / Client)',
-                description: 'Search, book, and review certified cooperative services at fair transparent rates.',
+                title: 'Customer (Household / Business)',
+                description: 'Book certified cooperative services at fair transparent rates with guaranteed worker welfare.',
                 icon: Icons.person_pin_circle_outlined,
                 accentColor: AppColors.roleCustomer,
                 isSelected: _selectedRole == UserRole.customer,
@@ -165,7 +164,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               // Worker Role Option
               _RoleSelectionCard(
                 title: 'Worker / Service Provider',
-                description: 'Get nearby service job alerts, transparent digital earnings, and cooperative welfare coverage.',
+                description: 'Receive verified job requests, transparent digital earnings, and cooperative health & pension protection.',
                 icon: Icons.engineering_outlined,
                 accentColor: AppColors.roleWorker,
                 isSelected: _selectedRole == UserRole.worker,
@@ -179,21 +178,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Security Notice for Admins
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                  color: AppColors.warning.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const Icon(Icons.shield_outlined, size: 20, color: Colors.amber),
+                    const Icon(Icons.shield_outlined, size: 20, color: AppColors.warning),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Administrative roles (Cooperative & Federation Admins) cannot be self-selected. They are verified and provisioned by cooperative apex executives.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              height: 1.4,
+                            ),
                       ),
                     ),
                   ],
@@ -204,10 +206,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               // Submit Button
               FilledButton(
                 onPressed: isLoading ? null : _handleCompleteOnboarding,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: AppColors.primary,
-                ),
                 child: isLoading
                     ? const SizedBox(
                         height: 20,
@@ -249,23 +247,40 @@ class _RoleSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color borderColor = isSelected ? accentColor : Theme.of(context).dividerColor.withValues(alpha: 0.3);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color borderColor = isSelected
+        ? accentColor
+        : (isDark ? AppColors.borderDark : AppColors.borderLight);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withValues(alpha: 0.08) : Theme.of(context).cardColor,
-          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.0),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? accentColor.withValues(alpha: isDark ? 0.12 : 0.05)
+              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(icon, size: 28, color: isSelected ? accentColor : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-            const SizedBox(width: 12),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isSelected ? 0.15 : 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 24, color: accentColor),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,28 +288,32 @@ class _RoleSelectionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: isSelected ? accentColor : Theme.of(context).colorScheme.onSurface,
+                      color: isSelected
+                          ? (isDark ? Colors.white : accentColor)
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.4,
                         ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 8.0, top: 2.0),
+              padding: const EdgeInsets.only(left: 8.0, top: 4.0),
               child: Icon(
                 isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: isSelected ? accentColor : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                size: 22,
+                color: isSelected
+                    ? accentColor
+                    : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                size: 20,
               ),
             ),
           ],

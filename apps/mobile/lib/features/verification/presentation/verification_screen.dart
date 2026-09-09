@@ -102,8 +102,8 @@ class VerificationScreen extends ConsumerWidget {
                                 Text(
                                   l10n?.appName ?? AppConstants.appName,
                                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w800,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                 ),
                                 const SizedBox(height: 2),
@@ -250,10 +250,6 @@ class VerificationScreen extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: Text(
                   l10n?.refreshDiagnostics ?? 'Re-check Diagnostics',
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: AppColors.primary,
                 ),
               ),
 

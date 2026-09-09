@@ -70,22 +70,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Text(
-                  'Join Sahayog Cooperative',
+                  'Create Your Account',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Empowering workers and communities through digital cooperatives',
+                  'Connect to fair opportunities with Sahayog Cooperative',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
                 // Full Name
                 TextFormField(
@@ -93,7 +94,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
                     prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
                   ),
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
@@ -112,7 +112,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Email Address',
                     prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(),
                   ),
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
@@ -133,10 +132,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
-                    border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -164,7 +162,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Confirm Password',
                     prefixIcon: Icon(Icons.lock_reset),
-                    border: OutlineInputBorder(),
                   ),
                   validator: (String? value) {
                     if (value != _passwordController.text) {
@@ -178,10 +175,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Submit button
                 FilledButton(
                   onPressed: isLoading ? null : _handleRegister,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: AppColors.primary,
-                  ),
                   child: isLoading
                       ? const SizedBox(
                           height: 20,
@@ -199,7 +192,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    const Text('Already have an account?'),
+                    Text(
+                      'Already have an account?',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
                     TextButton(
                       onPressed: () => context.go(AppRoutes.login),
                       child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
