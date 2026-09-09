@@ -14,10 +14,14 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final PageController _pageController = PageController();
+  final GlobalKey<FormState> _detailsFormKey = GlobalKey<FormState>();
+
   late final TextEditingController _fullNameController;
   final TextEditingController _phoneNumberController = TextEditingController();
   UserRole _selectedRole = UserRole.customer;
+  int _currentStep = 0;
+  static const int _totalSteps = 4;
 
   @override
   void initState() {
@@ -32,14 +36,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _fullNameController.dispose();
     _phoneNumberController.dispose();
     super.dispose();
   }
 
-  void _handleCompleteOnboarding() {
-    if (!_formKey.currentState!.validate()) return;
+  void _goToStep(int step) {
+    setState(() {
+      _currentStep = step;
+    });
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
 
+  void _handleNextFromDetails() {
+    if (!_detailsFormKey.currentState!.validate()) return;
+    _goToStep(2);
+  }
+
+  void _handleFinishOnboarding() {
     ref.read(authControllerProvider.notifier).completeOnboarding(
           fullName: _fullNameController.text.trim(),
           phoneNumber: _phoneNumberController.text.trim(),
@@ -64,364 +83,133 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     });
 
+    final double progress = (_currentStep + 1) / _totalSteps;
+
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        title: Row(
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.handshake_rounded,
-                color: AppColors.primary,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Profile Setup',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ],
+        leading: _currentStep > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back',
+                onPressed: isLoading ? null : () => _goToStep(_currentStep - 1),
+              )
+            : null,
+        title: Text(
+          'Step ${_currentStep + 1} of $_totalSteps',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: <Widget>[
-          IconButton(
-            tooltip: 'Sign Out',
-            icon: const Icon(Icons.logout_rounded, size: 20),
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+          TextButton(
+            onPressed: isLoading ? null : () => ref.read(authControllerProvider.notifier).signOut(),
+            child: const Text('Sign Out'),
           ),
           const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: <Widget>[
-          // Top subtle progress indicator bar
-          Container(
-            height: 3,
-            width: double.infinity,
-            color: isDark ? AppColors.borderDark : AppColors.borderLight,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: 1.0,
-                child: Container(color: AppColors.primary),
-              ),
-            ),
+          // Linear Progress Bar
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 3,
+            backgroundColor: isDark ? AppColors.borderDark : AppColors.borderLight,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
 
-          // Scrollable Form Body
+          // Multi-step PageView
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.defaultPadding,
-                vertical: 20,
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    // Step Badge & Header
-                    Row(
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'STEP 1 OF 1',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Essential Setup',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Complete your profile',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Tell us your name and select your marketplace account type to get started.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                    ),
-                    const SizedBox(height: 24),
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: <Widget>[
+                _buildWelcomeStep(context),
+                _buildDetailsStep(context),
+                _buildRoleStep(context),
+                _buildReviewStep(context, isLoading),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                    // Section 1: Contact Details
-                    const _SectionHeader(
-                      icon: Icons.badge_outlined,
-                      title: 'PERSONAL DETAILS',
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Full Name Input
-                    TextFormField(
-                      controller: _fullNameController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        hintText: 'e.g. Ramesh Kumar',
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your full legal name.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Phone Number with Indian +91 Badge
-                    TextFormField(
-                      controller: _phoneNumberController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'Mobile Number',
-                        hintText: '98765 43210',
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.only(left: 14, right: 10),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              const Text('🇮🇳', style: TextStyle(fontSize: 18)),
-                              const SizedBox(width: 6),
-                              Text(
-                                '+91',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                height: 20,
-                                width: 1,
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your mobile phone number.';
-                        }
-                        final String digits = value.replaceAll(RegExp(r'\D'), '');
-                        if (digits.length < 10) {
-                          return 'Phone number must have at least 10 digits.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Section 2: Role Selection
-                    const _SectionHeader(
-                      icon: Icons.tune_rounded,
-                      title: 'SELECT ACCOUNT TYPE',
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Customer Role Card
-                    _RoleSelectionCard(
-                      title: 'Customer',
-                      badge: 'HIRING & BOOKING',
-                      description: 'Discover verified cooperative workers, book local services, and track jobs with transparent digital billing.',
-                      features: const <String>[
-                        'Fair Transparent Rates',
-                        'Verified Workers',
-                        'Cooperative Escrow',
-                      ],
-                      icon: Icons.shopping_bag_outlined,
-                      accentColor: AppColors.roleCustomer,
-                      isSelected: _selectedRole == UserRole.customer,
-                      onTap: () {
-                        setState(() {
-                          _selectedRole = UserRole.customer;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Worker Role Card
-                    _RoleSelectionCard(
-                      title: 'Worker / Service Partner',
-                      badge: 'EARNING & WELFARE',
-                      description: 'Receive nearby service orders, direct instant payouts, skill certification, and cooperative social security coverage.',
-                      features: const <String>[
-                        'Guaranteed Fair Wages',
-                        'Health & Pension Cover',
-                        'Zero Platform Exploitation',
-                      ],
-                      icon: Icons.engineering_outlined,
-                      accentColor: AppColors.roleWorker,
-                      isSelected: _selectedRole == UserRole.worker,
-                      onTap: () {
-                        setState(() {
-                          _selectedRole = UserRole.worker;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Official Governance Callout
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.account_balance_outlined,
-                              size: 18,
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  'Cooperative Governance Assurance',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12.5,
-                                      ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Cooperative and Federation Admin credentials are provisioned directly by registered cooperative apex executives under statutory bylaws.',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        fontSize: 11.5,
-                                        height: 1.4,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+  // ==========================================
+  // STEP 1: WELCOME
+  // ==========================================
+  Widget _buildWelcomeStep(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Spacer(),
+          Center(
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  width: 1.5,
                 ),
+              ),
+              child: const Icon(
+                Icons.handshake_rounded,
+                size: 44,
+                color: AppColors.primary,
               ),
             ),
           ),
-
-          // Sticky Bottom Action Bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  width: 1.0,
-                ),
-              ),
+          const SizedBox(height: 28),
+          Center(
+            child: Text(
+              'Welcome to Sahayog',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
             ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'A transparent digital platform connecting communities with verified cooperative service workers.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Quick Highlights
+          _buildPerkRow(Icons.groups_outlined, 'Owned & governed by cooperative labor societies'),
+          const SizedBox(height: 12),
+          _buildPerkRow(Icons.verified_outlined, 'Transparent rates with guaranteed worker welfare'),
+          const SizedBox(height: 12),
+          _buildPerkRow(Icons.lock_outline, 'Secure identity verification and escrow protection'),
+
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton(
+              onPressed: () => _goToStep(1),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: FilledButton(
-                      onPressed: isLoading ? null : _handleCompleteOnboarding,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  'Complete Setup & Continue',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, size: 18),
-                              ],
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(
-                        Icons.lock_outline,
-                        size: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Governed by Cooperative Societies Act • Safe & Private',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                  Text('Get Started', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, size: 18),
                 ],
               ),
             ),
@@ -430,43 +218,416 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-  });
-
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildPerkRow(IconData icon, String text) {
     return Row(
       children: <Widget>[
-        Icon(icon, size: 15, color: AppColors.primary),
-        const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: AppColors.primary,
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Icon(icon, size: 18, color: AppColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // STEP 2: BASIC PROFILE (DETAILS)
+  // ==========================================
+  Widget _buildDetailsStep(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: 24),
+      child: Form(
+        key: _detailsFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Your Details',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Enter your contact details so we can verify your identity.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 28),
+
+            // Full Name Input
+            TextFormField(
+              controller: _fullNameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                hintText: 'e.g. Ramesh Kumar',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+              validator: (String? value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your full legal name.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Phone Number Input with +91 badge
+            TextFormField(
+              controller: _phoneNumberController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'Mobile Number',
+                hintText: '98765 43210',
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 14, right: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Text('🇮🇳', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '+91',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        height: 20,
+                        width: 1,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              validator: (String? value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your mobile phone number.';
+                }
+                final String digits = value.replaceAll(RegExp(r'\D'), '');
+                if (digits.length < 10) {
+                  return 'Phone number must have at least 10 digits.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 36),
+
+            // Continue Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton(
+                onPressed: _handleNextFromDetails,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // STEP 3: ROLE SELECTION
+  // ==========================================
+  Widget _buildRoleStep(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Select Your Role',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Choose how you plan to use Sahayog.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 24),
+
+          // Customer Option Card
+          _SimpleRoleCard(
+            title: 'Customer',
+            subtitle: 'I want to hire & book cooperative services',
+            icon: Icons.shopping_bag_outlined,
+            accentColor: AppColors.roleCustomer,
+            isSelected: _selectedRole == UserRole.customer,
+            onTap: () {
+              setState(() {
+                _selectedRole = UserRole.customer;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Worker Option Card
+          _SimpleRoleCard(
+            title: 'Worker / Service Partner',
+            subtitle: 'I want to offer services & earn with cooperative welfare',
+            icon: Icons.engineering_outlined,
+            accentColor: AppColors.roleWorker,
+            isSelected: _selectedRole == UserRole.worker,
+            onTap: () {
+              setState(() {
+                _selectedRole = UserRole.worker;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Admin Callout
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+            ),
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.shield_outlined, size: 18, color: AppColors.secondary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Cooperative Admin roles are assigned by apex executives under cooperative bylaws.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Continue Button
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton(
+              onPressed: () => _goToStep(3),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, size: 18),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // STEP 4: REVIEW & COMPLETE
+  // ==========================================
+  Widget _buildReviewStep(BuildContext context, bool isLoading) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String formattedPhone = _phoneNumberController.text.trim().isNotEmpty
+        ? '+91 ${_phoneNumberController.text.trim()}'
+        : 'Not provided';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Review & Confirm',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Confirm your details before entering your dashboard.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 24),
+
+          // Summary Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+            ),
+            child: Column(
+              children: <Widget>[
+                _buildSummaryRow(
+                  label: 'Full Name',
+                  value: _fullNameController.text.trim().isNotEmpty
+                      ? _fullNameController.text.trim()
+                      : 'Not provided',
+                  icon: Icons.person_outline,
+                  onEdit: () => _goToStep(1),
+                ),
+                const Divider(height: 20),
+                _buildSummaryRow(
+                  label: 'Mobile Number',
+                  value: formattedPhone,
+                  icon: Icons.phone_outlined,
+                  onEdit: () => _goToStep(1),
+                ),
+                const Divider(height: 20),
+                _buildSummaryRow(
+                  label: 'Marketplace Role',
+                  value: _selectedRole.displayName,
+                  icon: _selectedRole == UserRole.worker ? Icons.engineering_outlined : Icons.shopping_bag_outlined,
+                  accentColor: _selectedRole == UserRole.worker ? AppColors.roleWorker : AppColors.roleCustomer,
+                  onEdit: () => _goToStep(2),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Security Trust note
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  Icons.lock_outline,
+                  size: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Protected by Cooperative Data Governance Standards',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Submit Action
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton(
+              onPressed: isLoading ? null : _handleFinishOnboarding,
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          'Confirm & Enter Dashboard',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.check_circle_outline, size: 18),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onEdit,
+    Color? accentColor,
+  }) {
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 20, color: accentColor ?? Theme.of(context).colorScheme.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor ?? Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          tooltip: 'Edit',
+          onPressed: onEdit,
         ),
       ],
     );
   }
 }
 
-class _RoleSelectionCard extends StatelessWidget {
-  const _RoleSelectionCard({
+class _SimpleRoleCard extends StatelessWidget {
+  const _SimpleRoleCard({
     required this.title,
-    required this.badge,
-    required this.description,
-    required this.features,
+    required this.subtitle,
     required this.icon,
     required this.accentColor,
     required this.isSelected,
@@ -474,9 +635,7 @@ class _RoleSelectionCard extends StatelessWidget {
   });
 
   final String title;
-  final String badge;
-  final String description;
-  final List<String> features;
+  final String subtitle;
   final IconData icon;
   final Color accentColor;
   final bool isSelected;
@@ -491,10 +650,9 @@ class _RoleSelectionCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
@@ -502,136 +660,57 @@ class _RoleSelectionCard extends StatelessWidget {
               : (isDark ? AppColors.surfaceDark : Colors.white),
           border: Border.all(
             color: borderColor,
-            width: isSelected ? 1.8 : 1.0,
+            width: isSelected ? 1.6 : 1.0,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: accentColor.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                // Icon Mark
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: isSelected ? 0.16 : 0.09),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, size: 24, color: accentColor),
-                ),
-                const SizedBox(width: 14),
-
-                // Title and Badge
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          badge,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: accentColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15.5,
-                          color: isSelected
-                              ? (isDark ? Colors.white : accentColor)
-                              : Theme.of(context).colorScheme.onSurface,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Radio Indicator
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isSelected ? 0.15 : 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 22, color: accentColor),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                       color: isSelected
-                          ? accentColor
-                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                      width: isSelected ? 6.0 : 1.5,
+                          ? (isDark ? Colors.white : accentColor)
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Description
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 12.5,
-                    height: 1.45,
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
                   ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-
-            // Feature Chips
-            Wrap(
-              spacing: 6,
-              runSpacing: 5,
-              children: features
-                  .map(
-                    (String feat) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: isSelected ? 0.1 : 0.05),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(Icons.check, size: 12, color: accentColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            feat,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? (isDark ? Colors.white : accentColor)
-                                  : Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Icon(
+                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: isSelected
+                    ? accentColor
+                    : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                size: 20,
+              ),
             ),
           ],
         ),
