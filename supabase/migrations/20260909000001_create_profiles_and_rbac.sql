@@ -60,8 +60,8 @@ security definer set search_path = ''
 as $$
 begin
   if new.role is distinct from old.role then
-    -- Allow service_role bypass for administrative tools/scripts
-    if auth.role() = 'service_role' then
+    -- Allow administrative updates from SQL Editor (postgres superuser), service_role, or direct scripts
+    if current_user in ('postgres', 'supabase_admin') or auth.role() in ('service_role', 'supabase_admin') or auth.uid() is null then
       new.updated_at := now();
       return new;
     end if;
@@ -72,7 +72,7 @@ begin
       return new;
     end if;
 
-    -- Forbid all other role modifications and self-escalations
+    -- Forbid all other client-side role modifications and self-escalations
     raise exception 'Unauthorized: Users cannot modify their assigned role.'
       using errcode = '42501';
   end if;
