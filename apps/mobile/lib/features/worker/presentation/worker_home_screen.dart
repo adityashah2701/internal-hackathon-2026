@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/cooperative_society.dart';
 import '../../../data/models/user_profile.dart';
+import '../../../data/models/user_role.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -83,6 +86,66 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Status',
             onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Switch Portal / Role',
+            icon: const Icon(Icons.swap_horiz_rounded),
+            onSelected: (String route) {
+              if (route == 'verification') {
+                context.push(AppRoutes.verification);
+              } else if (route == 'customer') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.customer);
+                context.go(AppRoutes.customerDashboard);
+              } else if (route == 'coop') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.cooperativeAdmin);
+                context.go(AppRoutes.cooperativeDashboard);
+              } else if (route == 'fed') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
+                context.go(AppRoutes.federationDashboard);
+              }
+            },
+            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'verification',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
+                    SizedBox(width: 10),
+                    Text('Worker Verification Wizard'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'customer',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.shopping_bag_outlined, color: AppColors.roleCustomer, size: 20),
+                    SizedBox(width: 10),
+                    Text('Customer Booking Portal'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'coop',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.admin_panel_settings_outlined, color: AppColors.roleCooperative, size: 20),
+                    SizedBox(width: 10),
+                    Text('Cooperative Admin'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'fed',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
+                    SizedBox(width: 10),
+                    Text('Federation Admin'),
+                  ],
+                ),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),

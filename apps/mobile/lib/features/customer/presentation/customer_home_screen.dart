@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
+import '../../../data/models/user_role.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../controllers/customer_booking_controller.dart';
 
@@ -93,6 +96,66 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           ],
         ),
         actions: <Widget>[
+          PopupMenuButton<String>(
+            tooltip: 'Switch Portal / Role',
+            icon: const Icon(Icons.swap_horiz_rounded),
+            onSelected: (String route) {
+              if (route == 'verification') {
+                context.push(AppRoutes.verification);
+              } else if (route == 'worker') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.worker);
+                context.go(AppRoutes.workerDashboard);
+              } else if (route == 'coop') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.cooperativeAdmin);
+                context.go(AppRoutes.cooperativeDashboard);
+              } else if (route == 'fed') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
+                context.go(AppRoutes.federationDashboard);
+              }
+            },
+            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'verification',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
+                    SizedBox(width: 10),
+                    Text('Worker Verification Wizard'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'worker',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.engineering_outlined, color: AppColors.roleWorker, size: 20),
+                    SizedBox(width: 10),
+                    Text('Worker Workspace'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'coop',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.admin_panel_settings_outlined, color: AppColors.roleCooperative, size: 20),
+                    SizedBox(width: 10),
+                    Text('Cooperative Admin'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'fed',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
+                    SizedBox(width: 10),
+                    Text('Federation Admin'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout_rounded),
@@ -110,48 +173,67 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // Cooperative Trust Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: <Color>[Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              // Cooperative Trust Banner with Hero Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E3A8A),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Icon(Icons.handshake_rounded, color: Colors.white, size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'Direct Cooperative Guarantee',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      Image.asset(
+                        'assets/images/service_banner.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: <Color>[
+                              Colors.black.withValues(alpha: 0.82),
+                              Colors.black.withValues(alpha: 0.50),
+                              Colors.black.withValues(alpha: 0.15),
+                            ],
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
                           ),
                         ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Zero corporate aggregator commissions. Verified union professionals with state cooperative welfare board backing.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
-                    ),
-                  ],
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                Icon(Icons.handshake_rounded, color: Colors.amberAccent, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Direct Cooperative Guarantee',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Zero corporate commissions. Verified union professionals with state cooperative welfare board backing.',
+                              style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.3),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -695,42 +777,45 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
           ),
 
           // Wizard Actions
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-            ),
-            child: Row(
-              children: <Widget>[
-                if (_currentStep > 0) ...<Widget>[
-                  OutlinedButton(
-                    onPressed: () => setState(() => _currentStep--),
-                    child: const Text('Back'),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+              ),
+              child: Row(
+                children: <Widget>[
+                  if (_currentStep > 0) ...<Widget>[
+                    OutlinedButton(
+                      onPressed: () => setState(() => _currentStep--),
+                      child: const Text('Back'),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () {
+                              if (_currentStep < 3) {
+                                setState(() => _currentStep++);
+                              } else {
+                                _handleConfirmBooking();
+                              }
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(_currentStep == 3 ? 'Confirm & Book Service' : 'Continue'),
+                    ),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                Expanded(
-                  child: FilledButton(
-                    onPressed: isSubmitting
-                        ? null
-                        : () {
-                            if (_currentStep < 3) {
-                              setState(() => _currentStep++);
-                            } else {
-                              _handleConfirmBooking();
-                            }
-                          },
-                    child: isSubmitting
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(_currentStep == 3 ? 'Confirm & Book Service' : 'Continue'),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],

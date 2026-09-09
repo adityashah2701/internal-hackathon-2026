@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/models/user_role.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -62,6 +65,66 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Queue',
             onPressed: () => ref.read(cooperativeAdminProvider.notifier).loadWorkers(),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Switch Portal / Role',
+            icon: const Icon(Icons.swap_horiz_rounded),
+            onSelected: (String route) {
+              if (route == 'verification') {
+                context.push(AppRoutes.verification);
+              } else if (route == 'customer') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.customer);
+                context.go(AppRoutes.customerDashboard);
+              } else if (route == 'worker') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.worker);
+                context.go(AppRoutes.workerDashboard);
+              } else if (route == 'fed') {
+                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
+                context.go(AppRoutes.federationDashboard);
+              }
+            },
+            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'verification',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
+                    SizedBox(width: 10),
+                    Text('Worker Verification Wizard'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'customer',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.shopping_bag_outlined, color: AppColors.roleCustomer, size: 20),
+                    SizedBox(width: 10),
+                    Text('Customer Booking Portal'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'worker',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.engineering_outlined, color: AppColors.roleWorker, size: 20),
+                    SizedBox(width: 10),
+                    Text('Worker Workspace'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'fed',
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
+                    SizedBox(width: 10),
+                    Text('Federation Admin'),
+                  ],
+                ),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -864,6 +927,27 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                                   ),
                                   const SizedBox(height: 14),
 
+                                  // Document Visual Preview
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.withValues(alpha: 0.3),
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Image.asset(
+                                        _resolveDocumentImage(doc.documentType),
+                                        width: double.infinity,
+                                        height: 190,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
                                   // Details Grid
                                   _buildDocField('Applicant / Holder', worker.displayName),
                                   _buildDocField('Registered Phone', worker.phoneNumber ?? 'Not provided'),
@@ -1159,6 +1243,17 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
         );
       },
     );
+  }
+
+  String _resolveDocumentImage(DocumentType type) {
+    return switch (type) {
+      DocumentType.aadhaar => 'assets/images/aadhaar_card.jpg',
+      DocumentType.tradeCertificate => 'assets/images/skill_certificate.jpg',
+      DocumentType.cooperativeIdCard => 'assets/images/cooperative_id.jpg',
+      DocumentType.policeVerification => 'assets/images/skill_certificate.jpg',
+      DocumentType.voterId => 'assets/images/aadhaar_card.jpg',
+      DocumentType.pan => 'assets/images/aadhaar_card.jpg',
+    };
   }
 }
 
