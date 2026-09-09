@@ -59,21 +59,33 @@ language plpgsql
 security definer set search_path = ''
 as $$
 begin
-  -- Prevent changing role unless transitioning during onboarding to customer or worker
   if new.role is distinct from old.role then
-    if old.is_onboarded = false and new.role in ('customer'::public.user_role, 'worker'::public.user_role) then
-      -- Allowed during onboarding
-      null;
-    else
-      raise exception 'Unauthorized: User cannot arbitrarily change roles.';
+    -- Allow service_role bypass for administrative tools/scripts
+    if auth.role() = 'service_role' then
+      new.updated_at := now();
+      return new;
     end if;
+
+    -- During initial onboarding (is_onboarded = false), users can self-select customer or worker
+    if old.is_onboarded = false and new.role in ('customer'::public.user_role, 'worker'::public.user_role) then
+      new.updated_at := now();
+      return new;
+    end if;
+
+    -- Forbid all other role modifications and self-escalations
+    raise exception 'Unauthorized: Users cannot modify their assigned role.'
+      using errcode = '42501';
   end if;
-  new.updated_at = now();
+
+  new.updated_at := now();
   return new;
 end;
 $$;
 
-create trigger on_profile_role_update
+drop trigger if exists tr_check_profile_role_update on public.profiles;
+drop trigger if exists on_profile_role_update on public.profiles;
+
+create trigger tr_check_profile_role_update
   before update on public.profiles
   for each row execute procedure public.check_profile_role_update();
 
