@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/models/user_role.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -183,48 +182,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextButton(
                       onPressed: () => context.go(AppRoutes.register),
                       child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    '⚡ QUICK DEMO ACCESS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: <Widget>[
-                    ActionChip(
-                      avatar: const Icon(Icons.shopping_bag_outlined, size: 16),
-                      label: const Text('Customer'),
-                      onPressed: () => ref.read(authControllerProvider.notifier).setDemoUser(UserRole.customer),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.engineering_outlined, size: 16),
-                      label: const Text('Worker'),
-                      onPressed: () => ref.read(authControllerProvider.notifier).setDemoUser(UserRole.worker),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
-                      label: const Text('Coop Admin'),
-                      onPressed: () => ref.read(authControllerProvider.notifier).setDemoUser(UserRole.cooperativeAdmin),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.verified_user_outlined, size: 16),
-                      label: const Text('Verification Wizard'),
-                      onPressed: () => context.push(AppRoutes.verification),
                     ),
                   ],
                 ),

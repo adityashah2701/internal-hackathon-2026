@@ -70,7 +70,7 @@ class SupabaseFederationAdminRepository implements IFederationAdminRepository {
         totalWorkers: total,
         verifiedWorkers: verified,
         pendingVerifications: pending,
-        activeCooperatives: coopRows.isNotEmpty ? coopRows.length : CooperativeSociety.fallbackSocieties.length,
+        activeCooperatives: coopRows.length,
       );
     } catch (e) {
       AppLogger.warning('FederationAdminRepo: error fetching metrics: $e');
@@ -124,12 +124,9 @@ class SupabaseFederationAdminRepository implements IFederationAdminRepository {
     try {
       final List<Map<String, Object?>> response =
           await _safeClient.from('cooperatives').select().order('name');
-      if (response.isNotEmpty) {
-        return response.map(CooperativeSociety.fromJson).toList();
-      }
-      return CooperativeSociety.fallbackSocieties;
+      return response.map(CooperativeSociety.fromJson).toList();
     } catch (_) {
-      return CooperativeSociety.fallbackSocieties;
+      return <CooperativeSociety>[];
     }
   }
 }

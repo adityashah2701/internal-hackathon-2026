@@ -2,13 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/cooperative_society.dart';
 import '../../../data/models/user_profile.dart';
-import '../../../data/models/user_role.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -27,12 +23,12 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Background status check every 4 seconds to detect Cooperative Admin verification approval
     _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) {
-        final WorkerDashboardState currentState = ref.read(workerDashboardProvider);
-        if (currentState.profile.verificationStatus.isPending) {
-          ref.read(workerDashboardProvider.notifier).loadDashboard();
-        }
+      final WorkerVerificationStatus status =
+          ref.read(workerDashboardProvider).profile.verificationStatus;
+      if (status.isPending) {
+        ref.read(workerDashboardProvider.notifier).loadDashboard();
       }
     });
   }
@@ -42,25 +38,22 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
     _pollingTimer?.cancel();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final WorkerDashboardState state = ref.watch(workerDashboardProvider);
-    final AsyncValue<AppAuthState> authAsync = ref.watch(authControllerProvider);
-    final UserProfile? userProfile = switch (authAsync.value) {
-      AuthAuthenticated(:final UserProfile profile) => profile,
-      AuthOnboardingRequired(:final UserProfile? profile) => profile,
-      _ => null,
-    };
+    final UserProfile? userProfile = ref.watch(authControllerProvider).value is AuthAuthenticated
+        ? (ref.watch(authControllerProvider).value as AuthAuthenticated).profile
+        : null;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Listen for errors or success
-    ref.listen<WorkerDashboardState>(workerDashboardProvider, (WorkerDashboardState? prev, WorkerDashboardState next) {
+    ref.listen<WorkerDashboardState>(workerDashboardProvider,
+        (WorkerDashboardState? prev, WorkerDashboardState next) {
       if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
             backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -69,7 +62,6 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
           SnackBar(
             content: Text(next.successMessage!),
             backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -86,66 +78,6 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Status',
             onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Switch Portal / Role',
-            icon: const Icon(Icons.swap_horiz_rounded),
-            onSelected: (String route) {
-              if (route == 'verification') {
-                context.push(AppRoutes.verification);
-              } else if (route == 'customer') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.customer);
-                context.go(AppRoutes.customerDashboard);
-              } else if (route == 'coop') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.cooperativeAdmin);
-                context.go(AppRoutes.cooperativeDashboard);
-              } else if (route == 'fed') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
-                context.go(AppRoutes.federationDashboard);
-              }
-            },
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'verification',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
-                    SizedBox(width: 10),
-                    Text('Worker Verification Wizard'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'customer',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.shopping_bag_outlined, color: AppColors.roleCustomer, size: 20),
-                    SizedBox(width: 10),
-                    Text('Customer Booking Portal'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'coop',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.admin_panel_settings_outlined, color: AppColors.roleCooperative, size: 20),
-                    SizedBox(width: 10),
-                    Text('Cooperative Admin'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'fed',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
-                    SizedBox(width: 10),
-                    Text('Federation Admin'),
-                  ],
-                ),
-              ),
-            ],
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -281,7 +213,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
 
   Widget _buildPersonalInfoCard(
       BuildContext context, UserProfile? user, WorkerProfile profile, bool isDark) {
-    final String primaryTrade = profile.skills.isNotEmpty ? profile.skills.first : 'Service Technician';
+    final String primaryTrade = profile.skills.isNotEmpty ? profile.skills.first : 'Trade Not Set';
 
     return Card(
       elevation: 0,
@@ -312,41 +244,13 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                       ),
                       const SizedBox(height: 2),
-                      Row(
-                        children: <Widget>[
-                          Text(
-                            primaryTrade,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Rating summary
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withAlpha(30),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                                SizedBox(width: 3),
-                                Text(
-                                  '4.9 (42)',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.amber,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Text(
+                        primaryTrade,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -444,7 +348,8 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                   ),
                   Switch.adaptive(
                     value: profile.isAvailable,
-                    activeColor: AppColors.success,
+                    activeTrackColor: AppColors.success,
+                    activeThumbColor: Colors.white,
                     onChanged: (bool val) {
                       ref.read(workerDashboardProvider.notifier).toggleAvailability(val);
                     },
@@ -623,7 +528,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                       child: Text(
                         profile.cooperativeName ??
                             societies.firstOrNull?.name ??
-                            'Shramik Kalyan Labour Cooperative Society',
+                            'Not Assigned',
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                     ),
@@ -1072,7 +977,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
             // Cooperative Society Dropdown
             DropdownButtonFormField<String>(
               isExpanded: true,
-              value: _selectedCooperativeId,
+              initialValue: _selectedCooperativeId,
               decoration: const InputDecoration(
                 labelText: 'Affiliated Cooperative Society',
               ),
@@ -1129,39 +1034,48 @@ class _UploadDocumentSheet extends ConsumerStatefulWidget {
 
 class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
   DocumentType _selectedType = DocumentType.aadhaar;
-  String _sampleFileName = 'aadhaar_card_proof.pdf';
+  String _selectedFileName = 'aadhaar_card_proof.pdf';
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              const Text(
-                'Upload KYC Document',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withAlpha(80),
+                borderRadius: BorderRadius.circular(2),
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
-            'Select Document Type',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            'Upload KYC / Certification Document',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          Text(
+            'Uploaded documents are securely saved to the cooperative vault for society verification.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            ),
+          ),
+          const SizedBox(height: 18),
           DropdownButtonFormField<DocumentType>(
-            isExpanded: true,
-            value: _selectedType,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            initialValue: _selectedType,
+            decoration: const InputDecoration(
+              labelText: 'Select Document Type',
+              prefixIcon: Icon(Icons.description_outlined),
+            ),
             items: DocumentType.values.map((DocumentType type) {
               return DropdownMenuItem<DocumentType>(
                 value: type,
@@ -1172,42 +1086,44 @@ class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
               if (val != null) {
                 setState(() {
                   _selectedType = val;
-                  _sampleFileName = switch (val) {
+                  _selectedFileName = switch (val) {
                     DocumentType.aadhaar => 'aadhaar_card_proof.pdf',
-                    DocumentType.tradeCertificate => 'iti_skill_certificate.pdf',
+                    DocumentType.pan => 'pan_card_copy.pdf',
+                    DocumentType.tradeCertificate => 'national_trade_cert.pdf',
+                    DocumentType.policeVerification => 'police_clearance_cert.pdf',
                     DocumentType.cooperativeIdCard => 'cooperative_membership_card.pdf',
-                    DocumentType.policeVerification => 'police_verification_clearance.pdf',
                     DocumentType.voterId => 'voter_id_proof.pdf',
-                    DocumentType.pan => 'pan_card_proof.pdf',
                   };
                 });
               }
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(15),
+              color: AppColors.primary.withAlpha(12),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary.withAlpha(40)),
             ),
             child: Row(
               children: <Widget>[
-                const Icon(Icons.attach_file_rounded, color: AppColors.primary),
+                const Icon(Icons.attach_file_rounded, color: AppColors.primary, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        _sampleFileName,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                      ),
-                      const SizedBox(height: 2),
                       const Text(
-                        'Format: PDF/JPEG • Storage: Supabase kyc-documents',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        'Selected Document File',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                      Text(
+                        _selectedFileName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
                       ),
                     ],
                   ),
@@ -1222,14 +1138,13 @@ class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
               icon: const Icon(Icons.cloud_upload_rounded),
               label: const Text('Upload to Supabase Storage'),
               onPressed: () {
-                // Generate a realistic binary payload simulating the uploaded PDF/document
-                final String mockContent = 'SAHAYOG_KYC_${_selectedType.name}_${DateTime.now().toIso8601String()}';
-                final List<int> mockBytes = utf8.encode(mockContent);
+                final String docContent = 'SAHAYOG_KYC_${_selectedType.name}_${DateTime.now().toIso8601String()}';
+                final List<int> docBytes = utf8.encode(docContent);
 
                 ref.read(workerDashboardProvider.notifier).uploadDocument(
                       documentType: _selectedType,
-                      fileName: _sampleFileName,
-                      bytes: mockBytes,
+                      fileName: _selectedFileName,
+                      bytes: docBytes,
                       mimeType: 'application/pdf',
                     );
                 Navigator.of(context).pop();

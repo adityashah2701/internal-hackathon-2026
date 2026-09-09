@@ -250,30 +250,6 @@ class AuthController extends Notifier<AsyncValue<AppAuthState>> {
       state = const AsyncValue<AppAuthState>.data(AuthUnauthenticated());
     }
   }
-
-  /// Sets a demo user persona for offline/hackathon walkthrough testing
-  void setDemoUser(UserRole role) {
-    final sb.User demoUser = sb.User(
-      id: 'demo-${role.dbValue}-user',
-      appMetadata: const <String, dynamic>{},
-      userMetadata: <String, dynamic>{'full_name': 'Demo ${role.displayName}'},
-      aud: 'authenticated',
-      createdAt: DateTime.now().toIso8601String(),
-    );
-    final UserProfile demoProfile = UserProfile(
-      id: demoUser.id,
-      email: 'demo.${role.dbValue}@sahayog.coop',
-      fullName: 'Demo ${role.displayName}',
-      phoneNumber: '+91 98765 43210',
-      role: role,
-      isOnboarded: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    state = AsyncValue<AppAuthState>.data(
-      AuthAuthenticated(user: demoUser, profile: demoProfile),
-    );
-  }
 }
 
 

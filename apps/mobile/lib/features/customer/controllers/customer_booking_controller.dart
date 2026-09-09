@@ -186,15 +186,21 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
     return switch (authAsync.value) {
       AuthAuthenticated(:final UserProfile profile) => profile.id,
       AuthOnboardingRequired(:final sb.User user) => user.id,
-      _ => 'demo-customer-01',
+      _ => '',
     };
   }
 
   Future<void> loadCustomerBookings() async {
+    final String customerId = _currentCustomerId;
+    if (customerId.isEmpty) {
+      state = state.copyWith(bookings: const <Booking>[], isLoading: false);
+      return;
+    }
+
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final IBookingRepository repo = ref.read(bookingRepositoryProvider);
-      final List<Booking> bookings = await repo.getCustomerBookings(_currentCustomerId);
+      final List<Booking> bookings = await repo.getCustomerBookings(customerId);
       state = state.copyWith(bookings: bookings, isLoading: false);
     } catch (e) {
       state = state.copyWith(

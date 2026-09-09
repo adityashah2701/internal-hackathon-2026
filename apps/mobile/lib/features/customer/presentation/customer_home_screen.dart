@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../../core/constants/app_constants.dart';
-import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
-import '../../../data/models/user_role.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../controllers/customer_booking_controller.dart';
 
@@ -96,66 +92,6 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           ],
         ),
         actions: <Widget>[
-          PopupMenuButton<String>(
-            tooltip: 'Switch Portal / Role',
-            icon: const Icon(Icons.swap_horiz_rounded),
-            onSelected: (String route) {
-              if (route == 'verification') {
-                context.push(AppRoutes.verification);
-              } else if (route == 'worker') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.worker);
-                context.go(AppRoutes.workerDashboard);
-              } else if (route == 'coop') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.cooperativeAdmin);
-                context.go(AppRoutes.cooperativeDashboard);
-              } else if (route == 'fed') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
-                context.go(AppRoutes.federationDashboard);
-              }
-            },
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'verification',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
-                    SizedBox(width: 10),
-                    Text('Worker Verification Wizard'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'worker',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.engineering_outlined, color: AppColors.roleWorker, size: 20),
-                    SizedBox(width: 10),
-                    Text('Worker Workspace'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'coop',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.admin_panel_settings_outlined, color: AppColors.roleCooperative, size: 20),
-                    SizedBox(width: 10),
-                    Text('Cooperative Admin'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'fed',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
-                    SizedBox(width: 10),
-                    Text('Federation Admin'),
-                  ],
-                ),
-              ),
-            ],
-          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout_rounded),
@@ -1040,7 +976,8 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
               ),
               Switch.adaptive(
                 value: _isEmergency,
-                activeColor: Colors.red,
+                activeTrackColor: Colors.red,
+                activeThumbColor: Colors.white,
                 onChanged: (bool val) => setState(() => _isEmergency = val),
               ),
             ],

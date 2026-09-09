@@ -303,7 +303,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
           // Cooperative Society Affiliation Dropdown
           DropdownButtonFormField<String>(
-            value: wizard.selectedCooperativeId ??
+            initialValue: wizard.selectedCooperativeId ??
                 (wizard.societies.isNotEmpty ? wizard.societies.first.id : null),
             decoration: InputDecoration(
               labelText: 'Cooperative Society Affiliation *',
@@ -599,11 +599,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 _buildSummaryRow(
                   'Cooperative',
                   wizard.societies
-                      .firstWhere(
-                        (s) => s.id == wizard.selectedCooperativeId,
-                        orElse: () => CooperativeSociety.fallbackSocieties.first,
-                      )
-                      .name,
+                          .where((s) => s.id == wizard.selectedCooperativeId)
+                          .firstOrNull
+                          ?.name ??
+                      'Not Selected',
                 ),
                 _buildSummaryRow('Document', wizard.selectedDocType.displayName),
                 _buildSummaryRow(

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/models/user_role.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -66,66 +62,7 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
             tooltip: 'Refresh Queue',
             onPressed: () => ref.read(cooperativeAdminProvider.notifier).loadWorkers(),
           ),
-          PopupMenuButton<String>(
-            tooltip: 'Switch Portal / Role',
-            icon: const Icon(Icons.swap_horiz_rounded),
-            onSelected: (String route) {
-              if (route == 'verification') {
-                context.push(AppRoutes.verification);
-              } else if (route == 'customer') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.customer);
-                context.go(AppRoutes.customerDashboard);
-              } else if (route == 'worker') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.worker);
-                context.go(AppRoutes.workerDashboard);
-              } else if (route == 'fed') {
-                ref.read(authControllerProvider.notifier).setDemoUser(UserRole.federationAdmin);
-                context.go(AppRoutes.federationDashboard);
-              }
-            },
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'verification',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 20),
-                    SizedBox(width: 10),
-                    Text('Worker Verification Wizard'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'customer',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.shopping_bag_outlined, color: AppColors.roleCustomer, size: 20),
-                    SizedBox(width: 10),
-                    Text('Customer Booking Portal'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'worker',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.engineering_outlined, color: AppColors.roleWorker, size: 20),
-                    SizedBox(width: 10),
-                    Text('Worker Workspace'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'fed',
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.account_balance_outlined, color: AppColors.roleFederation, size: 20),
-                    SizedBox(width: 10),
-                    Text('Federation Admin'),
-                  ],
-                ),
-              ),
-            ],
-          ),
+
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign Out',
@@ -767,7 +704,7 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
         ),
     };
 
-    final String mockHash =
+    final String checksumHash =
         'SHA256:${doc.id.hashCode.abs().toRadixString(16).padLeft(12, '0').toUpperCase()}E9A1';
 
     showModalBottomSheet<void>(
@@ -957,13 +894,13 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                                   ),
                                   _buildDocField(
                                     'Primary Society',
-                                    worker.cooperativeName ?? 'Sahayog Labour Cooperative',
+                                    worker.cooperativeName ?? 'Unassigned',
                                   ),
                                   const Divider(height: 20),
                                   _buildDocField('File Attachment', '${doc.fileName} (${doc.formattedFileSize})'),
                                   _buildDocField('MIME Content-Type', doc.mimeType),
-                                  _buildDocField('Cloud Vault Bucket', 'kyc-documents (Supabase Encrypted)'),
-                                  _buildDocField('Digital Hash Checksum', mockHash),
+                                  _buildDocField('Cloud Vault Bucket', 'kyc-documents (Supabase Storage)'),
+                                  _buildDocField('Digital Hash Checksum', checksumHash),
                                 ],
                               ),
                             ),

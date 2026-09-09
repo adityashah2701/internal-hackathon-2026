@@ -12,9 +12,9 @@ class CooperativeAdminState {
     this.workers = const <WorkerProfile>[],
     this.selectedWorkerDocs = const <WorkerDocument>[],
     this.activeFilter = 'pending',
-    this.activeWorkersCount = 14,
-    this.totalBookingsCompleted = 38,
-    this.societyWelfarePoolInr = 18450,
+    this.activeWorkersCount = 0,
+    this.totalBookingsCompleted = 0,
+    this.societyWelfarePoolInr = 0,
     this.isLoading = false,
     this.isProcessing = false,
     this.errorMessage,
@@ -92,9 +92,9 @@ class CooperativeAdminNotifier extends AutoDisposeNotifier<CooperativeAdminState
 
       state = state.copyWith(
         workers: list,
-        activeWorkersCount: metrics != null ? metrics['activeWorkers'] : state.activeWorkersCount,
-        totalBookingsCompleted: metrics != null ? metrics['completedBookings'] : state.totalBookingsCompleted,
-        societyWelfarePoolInr: metrics != null ? metrics['welfarePoolInr'] : state.societyWelfarePoolInr,
+        activeWorkersCount: metrics?['activeWorkers'] ?? 0,
+        totalBookingsCompleted: metrics?['completedBookings'] ?? 0,
+        societyWelfarePoolInr: metrics?['welfarePoolInr'] ?? 0,
         isLoading: false,
       );
     } catch (e) {
