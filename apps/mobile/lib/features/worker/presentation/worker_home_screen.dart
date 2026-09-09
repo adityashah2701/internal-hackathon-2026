@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,26 @@ class WorkerHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) {
+        final WorkerDashboardState currentState = ref.read(workerDashboardProvider);
+        if (currentState.profile.verificationStatus.isPending) {
+          ref.read(workerDashboardProvider.notifier).loadDashboard();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final WorkerDashboardState state = ref.watch(workerDashboardProvider);
@@ -58,6 +79,11 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh Status',
+            onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign Out',
@@ -270,9 +296,11 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                const Text(
-                  'Trade & Qualifications',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                const Expanded(
+                  child: Text(
+                    'Trade & Qualifications',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                 ),
                 if (!profile.verificationStatus.isApproved)
                   TextButton.icon(
@@ -565,18 +593,29 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
     }
 
     if (state.profile.verificationStatus.isPending) {
-      return OutlinedButton.icon(
-        icon: const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        label: const Text('Application Under Review by Society'),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: null,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          OutlinedButton.icon(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            label: const Text(
+              'Under Review • Tap to Refresh Status',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your documents have been submitted to the Cooperative Society. Tap above anytime or pull down to check updated status.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
       );
     }
 

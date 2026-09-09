@@ -9,6 +9,7 @@ import '../../core/utils/app_logger.dart';
 import '../models/cooperative_society.dart';
 import '../models/worker_document.dart';
 import '../models/worker_profile.dart';
+import 'worker_data_store.dart';
 
 abstract interface class IWorkerRepository {
   Future<WorkerProfile> getWorkerProfile(String workerId);
@@ -48,10 +49,6 @@ class SupabaseWorkerRepository implements IWorkerRepository {
     return safeClient;
   }
 
-  // Local memory store for resilient mock testing & fallback
-  static final Map<String, WorkerProfile> _fallbackProfiles = <String, WorkerProfile>{};
-  static final Map<String, List<WorkerDocument>> _fallbackDocuments = <String, List<WorkerDocument>>{};
-
   @override
   Future<WorkerProfile> getWorkerProfile(String workerId) async {
     try {
@@ -63,36 +60,24 @@ class SupabaseWorkerRepository implements IWorkerRepository {
 
       if (data != null) {
         final WorkerProfile profile = WorkerProfile.fromJson(data);
-        _fallbackProfiles[workerId] = profile;
+        WorkerDataStore.upsertProfile(profile);
         return profile;
       }
 
-      // If record not created yet, return default blank profile
-      final WorkerProfile defaultProfile = _fallbackProfiles[workerId] ??
-          WorkerProfile(
-            id: workerId,
-            skills: const <String>['Electrician'],
-            experienceYears: 2,
-            verificationStatus: WorkerVerificationStatus.unsubmitted,
-          );
-      return defaultProfile;
+      return WorkerDataStore.getOrCreateProfile(workerId);
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException fetching worker profile: ${e.message}', tag: 'WorkerRepo');
-      return _fallbackProfiles[workerId] ??
-          WorkerProfile(
-            id: workerId,
-            skills: const <String>['Electrician'],
-            experienceYears: 2,
-            verificationStatus: WorkerVerificationStatus.unsubmitted,
-          );
+      return WorkerDataStore.getOrCreateProfile(workerId);
     } catch (e, st) {
       AppLogger.error('Error fetching worker profile', error: e, stackTrace: st);
-      return _fallbackProfiles[workerId] ?? WorkerProfile(id: workerId);
+      return WorkerDataStore.getOrCreateProfile(workerId);
     }
   }
 
   @override
   Future<WorkerProfile> updateWorkerProfile(WorkerProfile profile) async {
+    WorkerDataStore.upsertProfile(profile);
+
     try {
       final Map<String, Object?> data = await _safeClient
           .from('worker_profiles')
@@ -101,55 +86,56 @@ class SupabaseWorkerRepository implements IWorkerRepository {
           .single();
 
       final WorkerProfile updated = WorkerProfile.fromJson(data);
-      _fallbackProfiles[profile.id] = updated;
+      WorkerDataStore.upsertProfile(updated);
       return updated;
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException updating worker profile: ${e.message}', tag: 'WorkerRepo');
-      // Save in fallback cache for graceful UI continuity
-      _fallbackProfiles[profile.id] = profile;
       return profile;
     } catch (e, st) {
       AppLogger.error('Error updating worker profile', error: e, stackTrace: st);
-      _fallbackProfiles[profile.id] = profile;
       return profile;
     }
   }
 
   @override
   Future<WorkerProfile> submitForVerification(String workerId) async {
+    final WorkerProfile current = WorkerDataStore.getOrCreateProfile(workerId);
+    final WorkerProfile pendingProfile = current.copyWith(
+      verificationStatus: WorkerVerificationStatus.pending,
+      rejectionReason: null,
+      updatedAt: DateTime.now(),
+    );
+    WorkerDataStore.upsertProfile(pendingProfile);
+
     try {
+      final Map<String, Object?> payload = <String, Object?>{
+        'id': workerId,
+        'cooperative_id': current.cooperativeId,
+        'skills': current.skills,
+        'experience_years': current.experienceYears,
+        'daily_rate_inr': current.dailyRateInr,
+        'service_area': current.serviceArea,
+        'bio': current.bio,
+        'verification_status': WorkerVerificationStatus.pending.dbValue,
+        'rejection_reason': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
       final Map<String, Object?> data = await _safeClient
           .from('worker_profiles')
-          .update(<String, Object?>{
-            'verification_status': WorkerVerificationStatus.pending.dbValue,
-            'rejection_reason': null,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', workerId)
+          .upsert(payload)
           .select('*, cooperatives(name), profiles(full_name, phone_number, email)')
           .single();
 
       final WorkerProfile updated = WorkerProfile.fromJson(data);
-      _fallbackProfiles[workerId] = updated;
+      WorkerDataStore.upsertProfile(updated);
       return updated;
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException submitting verification: ${e.message}', tag: 'WorkerRepo');
-      final WorkerProfile current = _fallbackProfiles[workerId] ?? WorkerProfile(id: workerId);
-      final WorkerProfile updated = current.copyWith(
-        verificationStatus: WorkerVerificationStatus.pending,
-        rejectionReason: null,
-      );
-      _fallbackProfiles[workerId] = updated;
-      return updated;
+      return pendingProfile;
     } catch (e, st) {
       AppLogger.error('Error submitting verification', error: e, stackTrace: st);
-      final WorkerProfile current = _fallbackProfiles[workerId] ?? WorkerProfile(id: workerId);
-      final WorkerProfile updated = current.copyWith(
-        verificationStatus: WorkerVerificationStatus.pending,
-        rejectionReason: null,
-      );
-      _fallbackProfiles[workerId] = updated;
-      return updated;
+      return pendingProfile;
     }
   }
 
@@ -162,14 +148,17 @@ class SupabaseWorkerRepository implements IWorkerRepository {
           .eq('worker_id', workerId)
           .order('created_at', ascending: false);
 
-      final List<WorkerDocument> docs = response.map(WorkerDocument.fromJson).toList();
-      _fallbackDocuments[workerId] = docs;
-      return docs;
+      if (response.isNotEmpty) {
+        final List<WorkerDocument> docs = response.map(WorkerDocument.fromJson).toList();
+        WorkerDataStore.documents[workerId] = docs;
+        return docs;
+      }
+      return WorkerDataStore.documents[workerId] ?? <WorkerDocument>[];
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException fetching documents: ${e.message}', tag: 'WorkerRepo');
-      return _fallbackDocuments[workerId] ?? <WorkerDocument>[];
+      return WorkerDataStore.documents[workerId] ?? <WorkerDocument>[];
     } catch (e) {
-      return _fallbackDocuments[workerId] ?? <WorkerDocument>[];
+      return WorkerDataStore.documents[workerId] ?? <WorkerDocument>[];
     }
   }
 
@@ -216,7 +205,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
           .single();
 
       final WorkerDocument newDoc = WorkerDocument.fromJson(data);
-      _fallbackDocuments.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, newDoc);
+      WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, newDoc);
       return newDoc;
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException inserting document record: ${e.message}', tag: 'WorkerRepo');
@@ -231,7 +220,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
         status: 'pending',
         createdAt: DateTime.now(),
       );
-      _fallbackDocuments.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
+      WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
       return fallbackDoc;
     } catch (e, st) {
       AppLogger.error('Error in document upload workflow', error: e, stackTrace: st);
@@ -246,7 +235,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
         status: 'pending',
         createdAt: DateTime.now(),
       );
-      _fallbackDocuments.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
+      WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
       return fallbackDoc;
     }
   }
@@ -256,7 +245,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
     required String documentId,
     required String filePath,
   }) async {
-    for (final List<WorkerDocument> list in _fallbackDocuments.values) {
+    for (final List<WorkerDocument> list in WorkerDataStore.documents.values) {
       list.removeWhere((WorkerDocument d) => d.id == documentId);
     }
     try {
