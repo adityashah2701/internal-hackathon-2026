@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/models/user_role.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -16,6 +21,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
+  Timer? _navTimer;
 
   @override
   void initState() {
@@ -38,10 +44,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     _animController.forward();
+    _scheduleNavigation();
+  }
+
+  void _scheduleNavigation() {
+    _navTimer = Timer(const Duration(milliseconds: 2200), () {
+      if (!mounted) return;
+
+      final AsyncValue<AppAuthState> authAsync = ref.read(authControllerProvider);
+      final AppAuthState? authState = authAsync.value;
+
+      if (authState is AuthAuthenticated) {
+        final String roleHome = switch (authState.profile.role) {
+          UserRole.customer => AppRoutes.customerDashboard,
+          UserRole.worker => AppRoutes.workerDashboard,
+          UserRole.cooperativeAdmin => AppRoutes.cooperativeDashboard,
+          UserRole.federationAdmin => AppRoutes.federationDashboard,
+        };
+        context.go(roleHome);
+      } else if (authState is AuthOnboardingRequired) {
+        context.go(AppRoutes.onboarding);
+      } else {
+        context.go(AppRoutes.login);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _navTimer?.cancel();
     _animController.dispose();
     super.dispose();
   }

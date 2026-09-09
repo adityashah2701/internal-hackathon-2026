@@ -88,6 +88,11 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final String location = state.uri.path;
 
+      // Allow splash screen to display its animation and handle its own transition
+      if (location == AppRoutes.splash) {
+        return null;
+      }
+
       // Always permit developer diagnostics
       if (location == AppRoutes.verification) {
         return null;

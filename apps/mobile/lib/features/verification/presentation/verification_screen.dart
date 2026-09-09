@@ -91,11 +91,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Worker Verification',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         actions: <Widget>[
           IconButton(
             tooltip: 'System Diagnostics',
