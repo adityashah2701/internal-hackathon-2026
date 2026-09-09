@@ -116,10 +116,18 @@ create policy bookings_update on public.bookings
   using (
     (select auth.uid()) = customer_id
     or (select auth.uid()) = worker_id
+    or (worker_id is null and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role = 'worker'
+    ))
     or (select public.is_admin_or_officer())
   )
   with check (
     (select auth.uid()) = customer_id
     or (select auth.uid()) = worker_id
+    or (worker_id is null and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role = 'worker'
+    ))
     or (select public.is_admin_or_officer())
   );

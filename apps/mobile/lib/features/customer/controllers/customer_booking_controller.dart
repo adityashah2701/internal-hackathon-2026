@@ -2,157 +2,55 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../../../data/models/booking.dart';
+import '../../../data/models/service_category.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/repositories/booking_repository.dart';
+import '../../../data/repositories/review_repository.dart';
+import '../../../data/repositories/service_catalog_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
 
-class ServiceCategoryItem {
-  const ServiceCategoryItem({
-    required this.id,
-    required this.name,
-    required this.iconName,
-    required this.basePrice,
-    required this.services,
-  });
-
-  final String id;
-  final String name;
-  final String iconName;
-  final int basePrice;
-  final List<String> services;
-
-  static const List<ServiceCategoryItem> defaultCategories = <ServiceCategoryItem>[
-    ServiceCategoryItem(
-      id: 'electrician',
-      name: 'Electrician',
-      iconName: 'flash_on_rounded',
-      basePrice: 350,
-      services: <String>[
-        'MCB & Switchboard Repair',
-        'Ceiling Fan Installation & Repair',
-        'Complete House Wiring Diagnostics',
-        'Inverter & Backup Battery Setup',
-        'Lighting & Chandelier Fixtures',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'plumber',
-      name: 'Plumber',
-      iconName: 'water_drop_rounded',
-      basePrice: 350,
-      services: <String>[
-        'Pipe Leakage & Burst Diagnostics',
-        'Tap & Shower Fitting Replacement',
-        'Drain Cleaning & Blockage Clearing',
-        'Water Tank Valve & Motor Repair',
-        'Sanitary Ware & Commode Installation',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'carpenter',
-      name: 'Carpenter',
-      iconName: 'handyman_rounded',
-      basePrice: 400,
-      services: <String>[
-        'Door Lock, Latch & Hinge Alignment',
-        'Furniture Assembly & Repair',
-        'Modular Kitchen Cabinet Fixes',
-        'Custom Wooden Shelving',
-        'Window Frame & Mesh Repairs',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'cleaning',
-      name: 'Cleaning',
-      iconName: 'cleaning_services_rounded',
-      basePrice: 450,
-      services: <String>[
-        'Deep Home Sanitation',
-        'Kitchen Exhaust & Degreasing',
-        'Bathroom Scrubbing & Scaling',
-        'Sofa & Upholstery Shampooing',
-        'Post-Renovation Clean-up',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'caregiver',
-      name: 'Caregiver',
-      iconName: 'volunteer_activism_rounded',
-      basePrice: 500,
-      services: <String>[
-        'Elderly Day Assistance & Vitals',
-        'Post-Operative Patient Care',
-        'Physiotherapy Assistance',
-        'Companion & Mobility Support',
-        'Emergency Medical Escort',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'appliance',
-      name: 'Appliance Repair',
-      iconName: 'devices_other_rounded',
-      basePrice: 400,
-      services: <String>[
-        'Washing Machine Diagnostics',
-        'Refrigerator Gas & Cooling Fix',
-        'Microwave Oven Repair',
-        'RO Water Purifier Service & Filter',
-        'AC Servicing & Gas Refill',
-      ],
-    ),
-    ServiceCategoryItem(
-      id: 'painter',
-      name: 'Painter',
-      iconName: 'format_paint_rounded',
-      basePrice: 450,
-      services: <String>[
-        'Single Room Waterproof Emulsion',
-        'Full Home Interior Painting',
-        'Wall Crack Filling & Putty Work',
-        'Wood & Metal Enamel Polish',
-        'Exterior Weatherproof Coat',
-      ],
-    ),
-  ];
-}
-
+/// State for the customer dashboard — categories loaded from Supabase DB.
 class CustomerDashboardState {
   const CustomerDashboardState({
     this.bookings = const <Booking>[],
-    this.categories = ServiceCategoryItem.defaultCategories,
+    this.categories = const <ServiceCategory>[],
     this.searchQuery = '',
     this.selectedCategory,
     this.isLoading = false,
+    this.isCatalogLoading = false,
     this.isSubmitting = false,
     this.errorMessage,
     this.successMessage,
   });
 
   final List<Booking> bookings;
-  final List<ServiceCategoryItem> categories;
+  final List<ServiceCategory> categories;
   final String searchQuery;
   final String? selectedCategory;
   final bool isLoading;
+  final bool isCatalogLoading;
   final bool isSubmitting;
   final String? errorMessage;
   final String? successMessage;
 
-  List<ServiceCategoryItem> get filteredCategories {
+  List<ServiceCategory> get filteredCategories {
     if (searchQuery.isEmpty) return categories;
     final String q = searchQuery.toLowerCase();
-    return categories.where((ServiceCategoryItem cat) {
+    return categories.where((ServiceCategory cat) {
       final bool matchesCat = cat.name.toLowerCase().contains(q);
-      final bool matchesService = cat.services.any((String s) => s.toLowerCase().contains(q));
+      final bool matchesService =
+          cat.services.any((Service s) => s.name.toLowerCase().contains(q));
       return matchesCat || matchesService;
     }).toList();
   }
 
   CustomerDashboardState copyWith({
     List<Booking>? bookings,
-    List<ServiceCategoryItem>? categories,
+    List<ServiceCategory>? categories,
     String? searchQuery,
     String? selectedCategory,
     bool? isLoading,
+    bool? isCatalogLoading,
     bool? isSubmitting,
     String? errorMessage,
     String? successMessage,
@@ -166,6 +64,7 @@ class CustomerDashboardState {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
       isLoading: isLoading ?? this.isLoading,
+      isCatalogLoading: isCatalogLoading ?? this.isCatalogLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
@@ -176,8 +75,13 @@ class CustomerDashboardState {
 class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardState> {
   @override
   CustomerDashboardState build() {
-    const CustomerDashboardState stateObj = CustomerDashboardState(isLoading: true);
-    Future<void>.microtask(loadCustomerBookings);
+    const CustomerDashboardState stateObj = CustomerDashboardState(isLoading: true, isCatalogLoading: true);
+    Future<void>.microtask(() async {
+      await Future.wait(<Future<void>>[
+        loadServiceCatalog(),
+        loadCustomerBookings(),
+      ]);
+    });
     return stateObj;
   }
 
@@ -188,6 +92,21 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
       AuthOnboardingRequired(:final sb.User user) => user.id,
       _ => '',
     };
+  }
+
+  /// Load service categories and services from Supabase.
+  Future<void> loadServiceCatalog() async {
+    state = state.copyWith(isCatalogLoading: true);
+    try {
+      final IServiceCatalogRepository catalog = ref.read(serviceCatalogRepositoryProvider);
+      final List<ServiceCategory> categories = await catalog.getCategories();
+      state = state.copyWith(categories: categories, isCatalogLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isCatalogLoading: false,
+        errorMessage: 'Failed to load service catalog: $e',
+      );
+    }
   }
 
   Future<void> loadCustomerBookings() async {
@@ -231,6 +150,9 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
     required String serviceAddress,
     required bool isUrgent,
     required int baseFare,
+    String? serviceId,
+    double? customerLatitude,
+    double? customerLongitude,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
     try {
@@ -243,10 +165,10 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
         id: '',
         trackingCode: '',
         customerId: _currentCustomerId,
-        customerName: 'Customer',
         serviceCategory: serviceCategory,
         serviceTitle: serviceTitle,
         serviceDescription: serviceDescription,
+        serviceId: serviceId,
         scheduledDate: scheduledDate,
         timeSlot: timeSlot,
         serviceAddress: serviceAddress,
@@ -254,6 +176,8 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
         baseFare: subtotal,
         welfareFee: welfareFee,
         totalAmount: totalAmount,
+        customerLatitude: customerLatitude,
+        customerLongitude: customerLongitude,
         status: BookingStatus.requested,
       );
 
@@ -273,6 +197,47 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
         errorMessage: 'Failed to create booking: $e',
       );
       return null;
+    }
+  }
+
+  /// Cancel a booking (only allowed for 'requested' status).
+  Future<void> cancelBooking(String bookingId, {String? reason}) async {
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.cancelBooking(bookingId: bookingId, reason: reason);
+      await loadCustomerBookings();
+      state = state.copyWith(successMessage: 'Booking cancelled.');
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'Failed to cancel booking: $e');
+    }
+  }
+
+  Future<void> submitReview({
+    required String bookingId,
+    required String workerId,
+    required int rating,
+    String comment = '',
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearError: true, clearSuccess: true);
+    try {
+      final IReviewRepository repo = ref.read(reviewRepositoryProvider);
+      await repo.submitReview(
+        bookingId: bookingId,
+        reviewerId: _currentCustomerId,
+        workerId: workerId,
+        rating: rating,
+        comment: comment,
+      );
+      await loadCustomerBookings();
+      state = state.copyWith(
+        isSubmitting: false,
+        successMessage: 'Review submitted successfully. Thank you!',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: 'Failed to submit review: $e',
+      );
     }
   }
 }

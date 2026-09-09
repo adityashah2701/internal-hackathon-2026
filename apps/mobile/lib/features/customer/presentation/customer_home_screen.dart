@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
+import '../../../data/models/service_category.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../common/presentation/notification_screen.dart';
 import '../controllers/customer_booking_controller.dart';
+import 'payment_screen.dart';
 
 class CustomerHomeScreen extends ConsumerStatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -35,7 +38,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
     };
   }
 
-  void _openBookingSheet(BuildContext context, ServiceCategoryItem category) {
+  void _openBookingSheet(BuildContext context, ServiceCategory category) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -92,6 +95,17 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           ],
         ),
         actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            tooltip: 'Notifications',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const NotificationScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout_rounded),
@@ -230,7 +244,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                 ),
                 itemCount: state.filteredCategories.length,
                 itemBuilder: (BuildContext ctx, int index) {
-                  final ServiceCategoryItem cat = state.filteredCategories[index];
+                  final ServiceCategory cat = state.filteredCategories[index];
                   return _buildCategoryCard(context, cat, isDark);
                 },
               ),
@@ -301,7 +315,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, ServiceCategoryItem cat, bool isDark) {
+  Widget _buildCategoryCard(BuildContext context, ServiceCategory cat, bool isDark) {
     return InkWell(
       onTap: () => _openBookingSheet(context, cat),
       borderRadius: BorderRadius.circular(14),
@@ -380,10 +394,15 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
   Widget _buildBookingCard(BuildContext context, Booking booking, bool isDark) {
     final (Color statusColor, String statusLabel) = switch (booking.status) {
       BookingStatus.requested => (AppColors.warning, 'Requested'),
-      BookingStatus.assigned => (AppColors.primary, 'Worker Assigned'),
+      BookingStatus.accepted => (AppColors.primary, 'Worker Accepted'),
+      BookingStatus.scheduled => (Colors.blue, 'Scheduled'),
       BookingStatus.inProgress => (Colors.purple, 'In Progress'),
       BookingStatus.completed => (AppColors.success, 'Completed'),
+      BookingStatus.paymentConfirmed => (AppColors.success, 'Payment Confirmed'),
+      BookingStatus.reviewed => (AppColors.success, 'Reviewed'),
       BookingStatus.cancelled => (AppColors.error, 'Cancelled'),
+      BookingStatus.rejected => (AppColors.error, 'Rejected'),
+      _ => (Colors.grey, 'Unknown Status'),
     };
 
     return Container(
@@ -459,8 +478,72 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
               ],
             ),
           ],
+          if (booking.status == BookingStatus.requested) ...<Widget>[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  ref.read(customerDashboardProvider.notifier).cancelBooking(booking.id, reason: 'Cancelled by customer');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Cancel Booking', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+          if (booking.status == BookingStatus.completed) ...<Widget>[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => PaymentScreen(booking: booking),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Proceed to Payment', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+          if (booking.status == BookingStatus.paymentConfirmed) ...<Widget>[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _openReviewModal(context, booking),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Rate Worker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  void _openReviewModal(BuildContext context, Booking booking) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext ctx) => _ReviewModal(booking: booking),
     );
   }
 
@@ -497,7 +580,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 class _BookingWizardModal extends ConsumerStatefulWidget {
   const _BookingWizardModal({required this.category});
 
-  final ServiceCategoryItem category;
+  final ServiceCategory category;
 
   @override
   ConsumerState<_BookingWizardModal> createState() => _BookingWizardModalState();
@@ -525,7 +608,7 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
   @override
   void initState() {
     super.initState();
-    _selectedService = widget.category.services.first;
+    _selectedService = widget.category.services.isNotEmpty ? widget.category.services.first.name : '';
   }
 
   @override
@@ -769,12 +852,12 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
         ),
         const SizedBox(height: 12),
-        ...widget.category.services.map((String service) {
-          final bool isSelected = _selectedService == service;
+        ...widget.category.services.map((Service service) {
+          final bool isSelected = _selectedService == service.name;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: InkWell(
-              onTap: () => setState(() => _selectedService = service),
+              onTap: () => setState(() => _selectedService = service.name),
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -796,7 +879,7 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        service,
+                        service.name,
                         style: TextStyle(
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 13,
@@ -1094,6 +1177,90 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
               fontWeight: FontWeight.w700,
               color: highlightColor,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewModal extends ConsumerStatefulWidget {
+  const _ReviewModal({required this.booking});
+  final Booking booking;
+
+  @override
+  ConsumerState<_ReviewModal> createState() => _ReviewModalState();
+}
+
+class _ReviewModalState extends ConsumerState<_ReviewModal> {
+  int _rating = 0;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            'Rate ${widget.booking.workerName ?? 'Worker'}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List<Widget>.generate(5, (int index) {
+              return IconButton(
+                icon: Icon(
+                  index < _rating ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: Colors.amber,
+                  size: 36,
+                ),
+                onPressed: () => setState(() => _rating = index + 1),
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: 'Share your experience...',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            maxLines: 3,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _rating == 0
+                ? null
+                : () {
+                    ref.read(customerDashboardProvider.notifier).submitReview(
+                          bookingId: widget.booking.id,
+                          workerId: widget.booking.workerId ?? '',
+                          rating: _rating,
+                          comment: _commentController.text,
+                        );
+                    Navigator.of(context).pop();
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text('Submit Review'),
           ),
         ],
       ),

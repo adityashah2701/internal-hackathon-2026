@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../../data/models/booking.dart';
 import '../../../data/models/cooperative_society.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
+import '../../../data/repositories/booking_repository.dart';
 import '../../../data/repositories/worker_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
 
@@ -13,6 +15,9 @@ class WorkerDashboardState {
     required this.profile,
     this.documents = const <WorkerDocument>[],
     this.societies = const <CooperativeSociety>[],
+    this.availableBookings = const <Booking>[],
+    this.activeBookings = const <Booking>[],
+    this.historicalBookings = const <Booking>[],
     this.isLoading = false,
     this.isActionInProgress = false,
     this.errorMessage,
@@ -22,6 +27,9 @@ class WorkerDashboardState {
   final WorkerProfile profile;
   final List<WorkerDocument> documents;
   final List<CooperativeSociety> societies;
+  final List<Booking> availableBookings;
+  final List<Booking> activeBookings;
+  final List<Booking> historicalBookings;
   final bool isLoading;
   final bool isActionInProgress;
   final String? errorMessage;
@@ -31,6 +39,9 @@ class WorkerDashboardState {
     WorkerProfile? profile,
     List<WorkerDocument>? documents,
     List<CooperativeSociety>? societies,
+    List<Booking>? availableBookings,
+    List<Booking>? activeBookings,
+    List<Booking>? historicalBookings,
     bool? isLoading,
     bool? isActionInProgress,
     String? errorMessage,
@@ -42,6 +53,9 @@ class WorkerDashboardState {
       profile: profile ?? this.profile,
       documents: documents ?? this.documents,
       societies: societies ?? this.societies,
+      availableBookings: availableBookings ?? this.availableBookings,
+      activeBookings: activeBookings ?? this.activeBookings,
+      historicalBookings: historicalBookings ?? this.historicalBookings,
       isLoading: isLoading ?? this.isLoading,
       isActionInProgress: isActionInProgress ?? this.isActionInProgress,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -98,11 +112,43 @@ class WorkerDashboardNotifier extends AutoDisposeNotifier<WorkerDashboardState> 
         societies: societies,
         isLoading: false,
       );
+
+      // Load bookings separately to not block profile loading
+      await loadBookings();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load worker workspace. Please retry.',
       );
+    }
+  }
+
+  Future<void> loadBookings() async {
+    final String userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    try {
+      final IBookingRepository bookingRepo = ref.read(bookingRepositoryProvider);
+      
+      // 1. Available (requested, unassigned, matching skills)
+      final List<Booking> available = await bookingRepo.getAvailableBookingsForWorker(
+        workerId: userId,
+        skills: state.profile.skills,
+      );
+
+      // 2. My Bookings (assigned to me)
+      final List<Booking> myBookings = await bookingRepo.getWorkerBookings(userId);
+      
+      final List<Booking> active = myBookings.where((Booking b) => b.status.isActive).toList();
+      final List<Booking> historical = myBookings.where((Booking b) => b.status.isTerminal || b.status == BookingStatus.completed || b.status == BookingStatus.paymentConfirmed).toList();
+
+      state = state.copyWith(
+        availableBookings: available,
+        activeBookings: active,
+        historicalBookings: historical,
+      );
+    } catch (e) {
+      // Don't set error message as this is a background load
     }
   }
 
@@ -288,6 +334,86 @@ class WorkerDashboardNotifier extends AutoDisposeNotifier<WorkerDashboardState> 
       state = state.copyWith(
         isActionInProgress: false,
         errorMessage: 'Failed to submit verification: $e',
+      );
+    }
+  }
+
+  // --- Booking Actions ---
+
+  Future<void> acceptBooking(String bookingId) async {
+    final String userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    state = state.copyWith(isActionInProgress: true, clearError: true);
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.acceptBooking(bookingId: bookingId, workerId: userId);
+      await loadBookings();
+      state = state.copyWith(
+        isActionInProgress: false,
+        successMessage: 'Booking accepted successfully.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to accept booking: $e',
+      );
+    }
+  }
+
+  Future<void> rejectBooking(String bookingId, {String? reason}) async {
+    final String userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    state = state.copyWith(isActionInProgress: true, clearError: true);
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.rejectBooking(bookingId: bookingId, reason: reason);
+      await loadBookings();
+      state = state.copyWith(
+        isActionInProgress: false,
+        successMessage: 'Booking rejected.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to reject booking: $e',
+      );
+    }
+  }
+
+  Future<void> startJob(String bookingId) async {
+    state = state.copyWith(isActionInProgress: true, clearError: true);
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.startJob(bookingId);
+      await loadBookings();
+      state = state.copyWith(
+        isActionInProgress: false,
+        successMessage: 'Job started. Please ensure safety protocols.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to start job: $e',
+      );
+    }
+  }
+
+  Future<void> completeJob(String bookingId) async {
+    state = state.copyWith(isActionInProgress: true, clearError: true);
+    try {
+      final IBookingRepository repo = ref.read(bookingRepositoryProvider);
+      await repo.completeJob(bookingId);
+      await loadBookings();
+      state = state.copyWith(
+        isActionInProgress: false,
+        successMessage: 'Job marked as completed. Awaiting payment confirmation.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to complete job: $e',
       );
     }
   }

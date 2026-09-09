@@ -45,6 +45,8 @@ dependencies:
   go_router: ^14.8.1
 
   cupertino_icons: ^1.0.8
+  geolocator: ^14.0.3
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:

@@ -1,15 +1,32 @@
 enum BookingStatus {
-  requested('requested', 'Requested', 'Awaiting worker assignment by cooperative'),
-  assigned('assigned', 'Assigned', 'Cooperative worker assigned to service request'),
-  inProgress('in_progress', 'In Progress', 'Worker is currently executing the service'),
+  requested('requested', 'Requested', 'Awaiting worker acceptance'),
+  accepted('accepted', 'Accepted', 'Worker has accepted the booking'),
+  scheduled('scheduled', 'Scheduled', 'Service has been scheduled'),
+  inProgress('in_progress', 'In Progress', 'Worker is currently performing the service'),
   completed('completed', 'Completed', 'Service fulfilled and verified'),
-  cancelled('cancelled', 'Cancelled', 'Booking has been cancelled');
+  paymentConfirmed('payment_confirmed', 'Payment Confirmed', 'Payment has been received and verified'),
+  reviewed('reviewed', 'Reviewed', 'Customer has submitted a review'),
+  rejected('rejected', 'Rejected', 'Worker declined the booking'),
+  cancelled('cancelled', 'Cancelled', 'Booking has been cancelled'),
+  expired('expired', 'Expired', 'Booking expired without acceptance');
 
   const BookingStatus(this.dbValue, this.displayName, this.description);
 
   final String dbValue;
   final String displayName;
   final String description;
+
+  /// Whether this status represents an active (in-flight) booking.
+  bool get isActive => this == requested || this == accepted || this == scheduled || this == inProgress;
+
+  /// Whether this status represents a terminal (final) state.
+  bool get isTerminal => this == reviewed || this == cancelled || this == expired || this == rejected;
+
+  /// Whether payment is expected at this status.
+  bool get awaitingPayment => this == completed;
+
+  /// Whether a review can be submitted at this status.
+  bool get canReview => this == paymentConfirmed;
 
   static BookingStatus fromDbValue(String? value) {
     for (final BookingStatus s in BookingStatus.values) {
@@ -34,6 +51,7 @@ class Booking {
     required this.serviceCategory,
     required this.serviceTitle,
     this.serviceDescription = '',
+    this.serviceId,
     required this.scheduledDate,
     this.timeSlot = 'Morning (9 AM - 1 PM)',
     required this.serviceAddress,
@@ -42,6 +60,11 @@ class Booking {
     this.welfareFee = 30,
     this.totalAmount = 330,
     this.status = BookingStatus.requested,
+    this.customerLatitude,
+    this.customerLongitude,
+    this.acceptedAt,
+    this.completedAt,
+    this.cancellationReason,
     this.createdAt,
     this.updatedAt,
   });
@@ -57,6 +80,7 @@ class Booking {
   final String serviceCategory;
   final String serviceTitle;
   final String serviceDescription;
+  final String? serviceId;
   final DateTime scheduledDate;
   final String timeSlot;
   final String serviceAddress;
@@ -65,6 +89,11 @@ class Booking {
   final int welfareFee;
   final int totalAmount;
   final BookingStatus status;
+  final double? customerLatitude;
+  final double? customerLongitude;
+  final DateTime? acceptedAt;
+  final DateTime? completedAt;
+  final String? cancellationReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -80,6 +109,7 @@ class Booking {
     String? serviceCategory,
     String? serviceTitle,
     String? serviceDescription,
+    String? serviceId,
     DateTime? scheduledDate,
     String? timeSlot,
     String? serviceAddress,
@@ -88,6 +118,11 @@ class Booking {
     int? welfareFee,
     int? totalAmount,
     BookingStatus? status,
+    double? customerLatitude,
+    double? customerLongitude,
+    DateTime? acceptedAt,
+    DateTime? completedAt,
+    String? cancellationReason,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -103,6 +138,7 @@ class Booking {
       serviceCategory: serviceCategory ?? this.serviceCategory,
       serviceTitle: serviceTitle ?? this.serviceTitle,
       serviceDescription: serviceDescription ?? this.serviceDescription,
+      serviceId: serviceId ?? this.serviceId,
       scheduledDate: scheduledDate ?? this.scheduledDate,
       timeSlot: timeSlot ?? this.timeSlot,
       serviceAddress: serviceAddress ?? this.serviceAddress,
@@ -111,6 +147,11 @@ class Booking {
       welfareFee: welfareFee ?? this.welfareFee,
       totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,
+      customerLatitude: customerLatitude ?? this.customerLatitude,
+      customerLongitude: customerLongitude ?? this.customerLongitude,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
+      completedAt: completedAt ?? this.completedAt,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -154,6 +195,7 @@ class Booking {
       serviceCategory: json['service_category'] as String? ?? 'General',
       serviceTitle: json['service_title'] as String? ?? 'Home Service',
       serviceDescription: json['service_description'] as String? ?? '',
+      serviceId: json['service_id'] as String?,
       scheduledDate: parsedDate,
       timeSlot: json['time_slot'] as String? ?? 'Morning (9 AM - 1 PM)',
       serviceAddress: json['service_address'] as String? ?? '',
@@ -162,6 +204,11 @@ class Booking {
       welfareFee: (json['welfare_fee'] as num?)?.toInt() ?? 30,
       totalAmount: (json['total_amount'] as num?)?.toInt() ?? 330,
       status: BookingStatus.fromDbValue(json['status'] as String?),
+      customerLatitude: (json['customer_latitude'] as num?)?.toDouble(),
+      customerLongitude: (json['customer_longitude'] as num?)?.toDouble(),
+      acceptedAt: json['accepted_at'] != null ? DateTime.tryParse(json['accepted_at']! as String) : null,
+      completedAt: json['completed_at'] != null ? DateTime.tryParse(json['completed_at']! as String) : null,
+      cancellationReason: json['cancellation_reason'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']! as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']! as String) : null,
     );
@@ -177,6 +224,7 @@ class Booking {
       'service_category': serviceCategory,
       'service_title': serviceTitle,
       'service_description': serviceDescription,
+      'service_id': serviceId,
       'scheduled_date': scheduledDate.toIso8601String().substring(0, 10),
       'time_slot': timeSlot,
       'service_address': serviceAddress,
@@ -185,6 +233,9 @@ class Booking {
       'welfare_fee': welfareFee,
       'total_amount': totalAmount,
       'status': status.dbValue,
+      'customer_latitude': customerLatitude,
+      'customer_longitude': customerLongitude,
+      'cancellation_reason': cancellationReason,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };

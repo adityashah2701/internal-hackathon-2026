@@ -76,7 +76,11 @@ class _FederationHomeScreenState extends ConsumerState<FederationHomeScreen> {
                     _buildCooperativesSection(context, state.cooperatives, isDark),
                     const SizedBox(height: 24),
 
-                    // 3. Workforce Directory & Search / Filter
+                    // 3. Demand Forecasting
+                    _buildDemandForecastEmptyState(context, isDark),
+                    const SizedBox(height: 24),
+
+                    // 4. Workforce Directory & Search / Filter
                     _buildWorkforceDirectorySection(context, state, isDark),
                     const SizedBox(height: 32),
                   ],
@@ -141,6 +145,57 @@ class _FederationHomeScreenState extends ConsumerState<FederationHomeScreen> {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDemandForecastEmptyState(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text(
+          'PREDICTIVE DEMAND FORECASTING',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2), style: BorderStyle.solid),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.auto_graph_rounded, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
+              const SizedBox(height: 16),
+              const Text(
+                'Insufficient Data for AI Forecasting',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The predictive models require at least 30 days of historical booking data across multiple sectors to generate accurate workforce demand projections.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: 0.15,
+                backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Data Collection Progress: 15%',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+              ),
+            ],
+          ),
         ),
       ],
     );

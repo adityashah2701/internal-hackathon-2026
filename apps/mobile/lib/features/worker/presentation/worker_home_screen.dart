@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/models/booking.dart';
 import '../../../data/models/cooperative_society.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/worker_document.dart';
 import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../common/presentation/notification_screen.dart';
 import '../controllers/worker_controller.dart';
 
 class WorkerHomeScreen extends ConsumerStatefulWidget {
@@ -67,60 +69,98 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Worker Workspace',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-        ),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh Status',
-            onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Worker Workspace',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => _confirmSignOut(context),
-          ),
-        ],
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () async {
-                await ref.read(workerDashboardProvider.notifier).loadDashboard();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    // 1. Worker Identity & Verification Status Banner
-                    _buildVerificationBanner(context, state.profile, isDark),
-                    const SizedBox(height: 20),
-
-                    // 2. Personal Info Card
-                    _buildPersonalInfoCard(context, userProfile, state.profile, isDark),
-                    const SizedBox(height: 20),
-
-                    // 3. Trade Skills & Experience Card
-                    _buildTradeSkillsCard(context, state.profile, state.societies, isDark),
-                    const SizedBox(height: 20),
-
-                    // 4. KYC & Skill Documents Section
-                    _buildDocumentsCard(context, state.documents, state.profile.verificationStatus, isDark),
-                    const SizedBox(height: 28),
-
-                    // 5. Verification Action CTA
-                    _buildPrimaryActionCTA(context, state),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
+          actions: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh Status',
+              onPressed: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
             ),
+            IconButton(
+              icon: const Icon(Icons.notifications_none_rounded),
+              tooltip: 'Notifications',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const NotificationScreen(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout_rounded),
+              tooltip: 'Sign Out',
+              onPressed: () => _confirmSignOut(context),
+            ),
+          ],
+          bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: <Widget>[
+              Tab(text: 'Profile & Setup'),
+              Tab(text: 'Available Jobs'),
+              Tab(text: 'Active Jobs'),
+              Tab(text: 'History'),
+            ],
+          ),
+        ),
+        body: state.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: <Widget>[
+                  // TAB 1: Profile & Setup
+                  RefreshIndicator(
+                    onRefresh: () async {
+                      await ref.read(workerDashboardProvider.notifier).loadDashboard();
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          // 1. Worker Identity & Verification Status Banner
+                          _buildVerificationBanner(context, state.profile, isDark),
+                          const SizedBox(height: 20),
+
+                          // 2. Personal Info Card
+                          _buildPersonalInfoCard(context, userProfile, state.profile, isDark),
+                          const SizedBox(height: 20),
+
+                          // 3. Trade Skills & Experience Card
+                          _buildTradeSkillsCard(context, state.profile, state.societies, isDark),
+                          const SizedBox(height: 20),
+
+                          // 4. KYC & Skill Documents Section
+                          _buildDocumentsCard(context, state.documents, state.profile.verificationStatus, isDark),
+                          const SizedBox(height: 28),
+
+                          // 5. Verification Action CTA
+                          _buildPrimaryActionCTA(context, state),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // TAB 2: Available Jobs
+                  _buildAvailableJobsTab(context, state, isDark),
+
+                  // TAB 3: Active Jobs
+                  _buildActiveJobsTab(context, state, isDark),
+
+                  // TAB 4: History
+                  _buildHistoryTab(context, state, isDark),
+                ],
+              ),
+      ),
     );
   }
 
@@ -814,6 +854,304 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
           ],
         );
       },
+    );
+  }
+  // --- JOB TABS ---
+
+  Widget _buildAvailableJobsTab(BuildContext context, WorkerDashboardState state, bool isDark) {
+    if (state.profile.verificationStatus != WorkerVerificationStatus.approved) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Text(
+            'You must be verified by a cooperative to receive dispatch jobs.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+          ),
+        ),
+      );
+    }
+
+    if (!state.profile.isAvailable) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.work_off_rounded, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'You are currently OFF-DUTY.\nToggle your status in Profile to receive jobs.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+      child: state.availableBookings.isEmpty
+          ? Center(
+              child: Text(
+                'No new jobs in your area matching your skills.',
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.availableBookings.length,
+              itemBuilder: (BuildContext context, int index) {
+                final Booking booking = state.availableBookings[index];
+                return _buildBookingCard(
+                  context,
+                  booking: booking,
+                  isDark: isDark,
+                  primaryActionText: 'Accept Job',
+                  onPrimaryAction: () => ref.read(workerDashboardProvider.notifier).acceptBooking(booking.id),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildActiveJobsTab(BuildContext context, WorkerDashboardState state, bool isDark) {
+    return RefreshIndicator(
+      onRefresh: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+      child: state.activeBookings.isEmpty
+          ? Center(
+              child: Text(
+                'No active jobs.',
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.activeBookings.length,
+              itemBuilder: (BuildContext context, int index) {
+                final Booking booking = state.activeBookings[index];
+                return _buildBookingCard(
+                  context,
+                  booking: booking,
+                  isDark: isDark,
+                  primaryActionText: booking.status == BookingStatus.accepted ? 'Start Job' : 'Complete Job',
+                  onPrimaryAction: () {
+                    if (booking.status == BookingStatus.accepted) {
+                      ref.read(workerDashboardProvider.notifier).startJob(booking.id);
+                    } else if (booking.status == BookingStatus.inProgress) {
+                      ref.read(workerDashboardProvider.notifier).completeJob(booking.id);
+                    }
+                  },
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildHistoryTab(BuildContext context, WorkerDashboardState state, bool isDark) {
+    final Iterable<Booking> completedBookings = state.historicalBookings.where(
+      (Booking b) => b.status == BookingStatus.completed || b.status == BookingStatus.paymentConfirmed || b.status == BookingStatus.reviewed,
+    );
+    final int totalEarnings = completedBookings.fold<int>(0, (int sum, Booking b) => sum + (b.totalAmount - b.welfareFee));
+    final int totalWelfare = completedBookings.fold<int>(0, (int sum, Booking b) => sum + b.welfareFee);
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
+      child: CustomScrollView(
+        slivers: <Widget>[
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: <Widget>[
+                  const Text('Total Net Earnings', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Text('₹$totalEarnings', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      Column(
+                        children: <Widget>[
+                          const Text('Jobs Completed', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('${completedBookings.length}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      Container(width: 1, height: 30, color: Colors.grey.withValues(alpha: 0.3)),
+                      Column(
+                        children: <Widget>[
+                          const Text('Welfare Contributed', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('₹$totalWelfare', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.success)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (state.historicalBookings.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'No completed or cancelled jobs yet.',
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (BuildContext context, int index) {
+                    return _buildBookingCard(
+                      context,
+                      booking: state.historicalBookings[index],
+                      isDark: isDark,
+                    );
+                  },
+                  childCount: state.historicalBookings.length,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(
+    BuildContext context, {
+    required Booking booking,
+    required bool isDark,
+    String? primaryActionText,
+    VoidCallback? onPrimaryAction,
+  }) {
+    final Color bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color borderColor = isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: borderColor)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  booking.trackingCode,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.primary),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: booking.status.isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    booking.status.displayName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: booking.status.isActive ? AppColors.primary : Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Body
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  booking.serviceTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        booking.serviceAddress,
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    const Icon(Icons.access_time_rounded, size: 16, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${booking.scheduledDate.toLocal().toString().split(' ')[0]} | ${booking.timeSlot}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Actions
+          if (primaryActionText != null && onPrimaryAction != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: ElevatedButton(
+                onPressed: onPrimaryAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(primaryActionText, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
