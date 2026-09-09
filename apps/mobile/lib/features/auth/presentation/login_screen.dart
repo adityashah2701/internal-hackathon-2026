@@ -53,12 +53,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.defaultPadding,
+              vertical: 20,
+            ),
           child: Form(
             key: _formKey,
             child: Column(
@@ -190,6 +191,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

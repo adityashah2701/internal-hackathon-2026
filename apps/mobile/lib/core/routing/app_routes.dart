@@ -1,5 +1,6 @@
 abstract final class AppRoutes {
-  // Verification / Diagnostic Root
+  // Splash & Entry
+  static const String splash = '/splash';
   static const String root = '/';
   static const String verification = '/verification';
 

@@ -7,6 +7,7 @@ import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/common/presentation/splash_screen.dart';
 import '../../features/cooperative/presentation/cooperative_home_screen.dart';
 import '../../features/customer/presentation/customer_home_screen.dart';
 import '../../features/federation/presentation/federation_home_screen.dart';
@@ -33,9 +34,15 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
   final _RouterRefreshNotifier refreshNotifier = ref.watch(_routerRefreshNotifierProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.login,
+    initialLocation: AppRoutes.splash,
     refreshListenable: refreshNotifier,
     routes: <RouteBase>[
+      // Splash Screen
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (BuildContext context, GoRouterState state) => const SplashScreen(),
+      ),
+
       // Public / Auth Routes
       GoRoute(
         path: AppRoutes.login,
@@ -89,9 +96,9 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       final AsyncValue<AppAuthState> authAsync = ref.read(authControllerProvider);
       final AppAuthState? authState = authAsync.value;
 
-      // While checking session on launch, stay where we are
-      if (authState is AuthInitial || authState == null) {
-        return null;
+      // While checking session on launch, stay on splash
+      if (authState is AuthInitial || authState == null || authAsync.isLoading) {
+        return location == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
       // 1. Unauthenticated: Force to Login or Register
@@ -114,8 +121,9 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
           UserRole.federationAdmin => AppRoutes.federationDashboard,
         };
 
-        // If user is on an auth or onboarding screen, redirect to their role home
-        final bool isOnEntryFlow = location == AppRoutes.login ||
+        // If user is on an auth, splash, or onboarding screen, redirect to their role home
+        final bool isOnEntryFlow = location == AppRoutes.splash ||
+            location == AppRoutes.login ||
             location == AppRoutes.register ||
             location == AppRoutes.onboarding ||
             location == AppRoutes.root;
