@@ -55,13 +55,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: <Widget>[
-          TextButton.icon(
-            onPressed: () => context.push(AppRoutes.verification),
-            icon: const Icon(Icons.info_outline, size: 18),
-            label: const Text('Diagnostics'),
-          ),
-        ],
       ),
       body: Center(
         child: SingleChildScrollView(
