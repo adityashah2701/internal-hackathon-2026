@@ -3,12 +3,33 @@ import 'package:mobile/core/errors/app_exception.dart';
 import 'package:mobile/data/models/worker_document.dart';
 import 'package:mobile/data/models/worker_profile.dart';
 import 'package:mobile/data/repositories/cooperative_admin_repository.dart';
+import 'package:mobile/data/repositories/worker_data_store.dart';
 
 void main() {
   group('CooperativeAdminRepository Tests', () {
     late ICooperativeAdminRepository repository;
 
     setUp(() {
+      WorkerDataStore.clear();
+      WorkerDataStore.upsertProfile(
+        const WorkerProfile(
+          id: 'test-pending-1',
+          fullName: 'Test Pending Worker',
+          phoneNumber: '+91 99887 76655',
+          verificationStatus: WorkerVerificationStatus.pending,
+        ),
+      );
+      WorkerDataStore.documents['test-pending-1'] = <WorkerDocument>[
+        const WorkerDocument(
+          id: 'doc-1',
+          workerId: 'test-pending-1',
+          documentType: DocumentType.aadhaar,
+          fileName: 'aadhaar_card.pdf',
+          filePath: 'test/aadhaar.pdf',
+          status: 'pending',
+        ),
+      ];
+
       repository = SupabaseCooperativeAdminRepository(client: null);
     });
 
@@ -19,14 +40,14 @@ void main() {
     });
 
     test('getWorkerDocuments returns document attachments', () async {
-      final List<WorkerDocument> docs = await repository.getWorkerDocuments('worker-ramesh-01');
+      final List<WorkerDocument> docs = await repository.getWorkerDocuments('test-pending-1');
       expect(docs, isNotEmpty);
       expect(docs.first.fileName, contains('aadhaar'));
     });
 
     test('approveWorker certifies worker', () async {
       final WorkerProfile approved = await repository.approveWorker(
-        workerId: 'worker-ramesh-01',
+        workerId: 'test-pending-1',
         adminId: 'admin-coop-01',
       );
 
@@ -38,7 +59,7 @@ void main() {
     test('rejectWorker requires non-empty reason', () async {
       expect(
         () => repository.rejectWorker(
-          workerId: 'worker-sunita-02',
+          workerId: 'test-pending-1',
           adminId: 'admin-coop-01',
           reason: '   ',
         ),
@@ -49,7 +70,7 @@ void main() {
     test('rejectWorker marks worker as rejected with reason', () async {
       const String reason = 'Aadhaar copy is blurry. Please re-upload a clear scanned document.';
       final WorkerProfile rejected = await repository.rejectWorker(
-        workerId: 'worker-sunita-02',
+        workerId: 'test-pending-1',
         adminId: 'admin-coop-01',
         reason: reason,
       );

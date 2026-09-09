@@ -3,12 +3,42 @@ import 'package:mobile/data/models/cooperative_society.dart';
 import 'package:mobile/data/models/worker_profile.dart';
 import 'package:mobile/data/repositories/federation_admin_repository.dart';
 
+class StubFederationRepository implements IFederationAdminRepository {
+  @override
+  Future<FederationMetrics> getMetrics() async => const FederationMetrics(
+        totalWorkers: 5,
+        verifiedWorkers: 3,
+        pendingVerifications: 2,
+        activeCooperatives: 3,
+      );
+
+  @override
+  Future<List<WorkerProfile>> getFilteredWorkers({
+    String? searchQuery,
+    String? statusFilter,
+    String? cooperativeId,
+  }) async {
+    final List<WorkerProfile> list = <WorkerProfile>[
+      const WorkerProfile(
+        id: 'fed-1',
+        fullName: 'Test Electrician',
+        skills: <String>['Electrician'],
+        verificationStatus: WorkerVerificationStatus.approved,
+      ),
+    ];
+    return list;
+  }
+
+  @override
+  Future<List<CooperativeSociety>> getCooperatives() async => CooperativeSociety.fallbackSocieties;
+}
+
 void main() {
   group('FederationAdminRepository Tests', () {
     late IFederationAdminRepository repository;
 
     setUp(() {
-      repository = SupabaseFederationAdminRepository(client: null);
+      repository = StubFederationRepository();
     });
 
     test('getMetrics calculates telemetry numbers accurately', () async {

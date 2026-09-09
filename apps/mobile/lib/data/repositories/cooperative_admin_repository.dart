@@ -50,17 +50,13 @@ class SupabaseCooperativeAdminRepository implements ICooperativeAdminRepository 
       }
 
       final List<Map<String, Object?>> response = await query.order('created_at', ascending: false);
-      if (response.isNotEmpty) {
-        final List<WorkerProfile> dbWorkers = response.map(WorkerProfile.fromJson).toList();
-        for (final WorkerProfile w in dbWorkers) {
-          WorkerDataStore.upsertProfile(w);
-        }
-        return dbWorkers;
+      final List<WorkerProfile> dbWorkers = response.map(WorkerProfile.fromJson).toList();
+      for (final WorkerProfile w in dbWorkers) {
+        WorkerDataStore.upsertProfile(w);
       }
-
-      return WorkerDataStore.getAllWorkers(statusFilter: statusFilter);
+      return dbWorkers;
     } catch (e) {
-      AppLogger.warning('CooperativeAdminRepo: using local datastore: $e');
+      AppLogger.warning('CooperativeAdminRepo: error fetching from database, checking local store: $e');
       return WorkerDataStore.getAllWorkers(statusFilter: statusFilter);
     }
   }
@@ -107,7 +103,7 @@ class SupabaseCooperativeAdminRepository implements ICooperativeAdminRepository 
       WorkerDataStore.upsertProfile(updated);
       return updated;
     } catch (e) {
-      AppLogger.warning('CooperativeAdmin: Approved locally due to: $e');
+      AppLogger.warning('CooperativeAdmin: Approved in local session due to: $e');
       return WorkerDataStore.getOrCreateProfile(workerId);
     }
   }
@@ -142,7 +138,7 @@ class SupabaseCooperativeAdminRepository implements ICooperativeAdminRepository 
       WorkerDataStore.upsertProfile(updated);
       return updated;
     } catch (e) {
-      AppLogger.warning('CooperativeAdmin: Rejected locally due to: $e');
+      AppLogger.warning('CooperativeAdmin: Rejected in local session due to: $e');
       return WorkerDataStore.getOrCreateProfile(workerId);
     }
   }
