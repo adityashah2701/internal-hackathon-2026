@@ -13,10 +13,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify application name is rendered
-    expect(find.text(AppConstants.appName), findsOneWidget);
-    // Verify diagnostics screen components render
-    expect(find.text('Foundation Readiness'), findsOneWidget);
-    expect(find.text('Target Role Architecture (PS-089)'), findsOneWidget);
-    expect(find.text('Re-check Diagnostics'), findsOneWidget);
+    expect(find.text(AppConstants.appName), findsWidgets);
+    // Verify login screen elements render
+    expect(find.text('Sign In'), findsWidgets);
+    expect(find.text('Email Address'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text("Don't have an account?"), findsOneWidget);
+    expect(find.text('Sign Up'), findsOneWidget);
   });
 }
+

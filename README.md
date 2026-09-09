@@ -64,9 +64,28 @@ internal-hackathon-2026/
 
 ---
 
+## Implemented Foundations
+* **Phase 1: Project Initialization**: Monorepo structure (Melos), Flutter 3.44+ base app, Riverpod state management, GoRouter routing, localization (`en`, `hi`, `mr`), unified theme.
+* **Phase 2: Auth, RBAC & Onboarding**:
+  * Supabase Auth integration (email/password sign-in & sign-up, persistent sessions, reactive state).
+  * Typed `UserRole` (`customer`, `worker`, `cooperative_admin`, `federation_admin`).
+  * Onboarding gateway with public role self-selection guarded against admin escalation.
+  * PostgreSQL schema & RLS policies with trigger-enforced privilege integrity (`supabase/migrations/`).
+  * Role-routed home screen destinations.
+
+---
+
+## Development & Testing Commands
+* **Run static analysis**: `cd apps/mobile && flutter analyze`
+* **Run test suite**: `cd apps/mobile && flutter test`
+* **Run mobile app**: `cd apps/mobile && flutter run`
+
+---
+
 ## Engineering Rules
-All engineering work adheres strictly to [AGENT_RULES.md](file:///Users/adityashah/Developer/Aditya%20Projects/internal-hackathon-2026/AGENT_RULES.md).
+All engineering work adheres strictly to [AGENT_RULES.md](AGENT_RULES.md).
 Key tenets:
 * **Architecture First**: Understand requirements, entities, auth, and state before writing code.
 * **Strict Type Safety**: No dynamic escapes or unvalidated casts.
 * **Security at Database Layer**: RLS policies enforce RBAC, not client UI.
+
