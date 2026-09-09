@@ -1,0 +1,19 @@
+{
+  "@@locale": "hi",
+  "appName": "सहयोग",
+  "appTagline": "सहकारी स्वामित्व वाला डिजिटल सेवा बाज़ार",
+  "systemVerification": "सिस्टम निदान",
+  "supabaseStatus": "सुपाबेस क्लाइंट",
+  "statusConfigured": "कॉन्फ़िगर और तैयार",
+  "statusNotConfigured": "कॉन्फ़िगरेशन प्रतीक्षारत",
+  "environment": "पर्यावरण",
+  "appVersion": "ऐप संस्करण",
+  "authSession": "ऑथ सत्र",
+  "noActiveSession": "कोई सक्रिय सत्र नहीं (अतिथि)",
+  "supportedLanguages": "समर्थित भाषाएँ",
+  "roleCustomer": "ग्राहक",
+  "roleWorker": "श्रमिक",
+  "roleCooperativeAdmin": "सहकारी प्रबंधक",
+  "roleFederationAdmin": "महासंघ व्यवस्थापक",
+  "refreshDiagnostics": "निदान पुनः जांचें"
+}

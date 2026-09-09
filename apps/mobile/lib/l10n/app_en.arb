@@ -1,0 +1,67 @@
+{
+  "@@locale": "en",
+  "appName": "Sahayog",
+  "@appName": {
+    "description": "Application title"
+  },
+  "appTagline": "Cooperative-Owned Digital Service Marketplace",
+  "@appTagline": {
+    "description": "Application tagline"
+  },
+  "systemVerification": "System Diagnostics",
+  "@systemVerification": {
+    "description": "Title for the system verification screen"
+  },
+  "supabaseStatus": "Supabase Client",
+  "@supabaseStatus": {
+    "description": "Label for Supabase client status"
+  },
+  "statusConfigured": "Configured & Ready",
+  "@statusConfigured": {
+    "description": "Status text when client is configured"
+  },
+  "statusNotConfigured": "Pending Configuration",
+  "@statusNotConfigured": {
+    "description": "Status text when client is not configured"
+  },
+  "environment": "Environment",
+  "@environment": {
+    "description": "Label for environment mode"
+  },
+  "appVersion": "App Version",
+  "@appVersion": {
+    "description": "Label for app version"
+  },
+  "authSession": "Auth Session",
+  "@authSession": {
+    "description": "Label for auth session status"
+  },
+  "noActiveSession": "No active session (Guest)",
+  "@noActiveSession": {
+    "description": "Status when no user session is present"
+  },
+  "supportedLanguages": "Supported Languages",
+  "@supportedLanguages": {
+    "description": "Label for supported languages"
+  },
+  "roleCustomer": "Customer",
+  "@roleCustomer": {
+    "description": "Customer role label"
+  },
+  "roleWorker": "Worker",
+  "@roleWorker": {
+    "description": "Worker role label"
+  },
+  "roleCooperativeAdmin": "Cooperative Admin",
+  "@roleCooperativeAdmin": {
+    "description": "Cooperative Admin role label"
+  },
+  "roleFederationAdmin": "Federation Admin",
+  "@roleFederationAdmin": {
+    "description": "Federation Admin role label"
+  },
+  "refreshDiagnostics": "Re-check Diagnostics",
+  "@refreshDiagnostics": {
+    "description": "Button to refresh diagnostics"
+  }
+}

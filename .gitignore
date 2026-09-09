@@ -1,0 +1,145 @@
+# ==========================================
+# Flutter / Dart
+# ==========================================
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+**/.flutter-plugins
+.flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
+.packages
+**/.packages
+build/
+**/build/
+ephemeral/
+**/ephemeral/
+.pub-cache/
+**/.pub-cache/
+.pub/
+**/.pub/
+**/doc/api/
+/coverage/
+**/coverage/
+
+# Generated plugin registrants
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
+**/GeneratedPluginRegistrant.h
+**/GeneratedPluginRegistrant.m
+
+# Symbolication & Obfuscation
+app.*.symbols
+**/app.*.symbols
+app.*.map.json
+**/app.*.map.json
+
+# ==========================================
+# Android
+# ==========================================
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/key.properties
+*.keystore
+*.jks
+
+# ==========================================
+# iOS / macOS / Xcode
+# ==========================================
+**/xcuserdata/
+**/*.xcuserdatad/
+**/DerivedData/
+**/Pods/
+**/.symlinks/
+**/profile/
+**/*.mode1v3
+**/*.mode2v3
+**/*.moved-aside
+**/*.pbxuser
+**/*.perspectivev3
+**/*sync/
+**/.sconsign.dblite
+**/.tags*
+**/.vagrant/
+**/Icon?
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/.last_build_id
+**/ios/ServiceDefinitions.json
+*.xccheckout
+*.xcscmblueprint
+**/Flutter/ephemeral/
+**/Flutter/Flutter-Generated.xcconfig
+
+# ==========================================
+# Web
+# ==========================================
+**/web/build/
+
+# ==========================================
+# Windows / Linux desktop
+# ==========================================
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# ==========================================
+# Supabase
+# ==========================================
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# ==========================================
+# Environment Variables & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.*
+.env*.local
+!.env.example
+*.pem
+*.key
+*.cert
+service-account*.json
+
+# ==========================================
+# IDEs & Operating Systems
+# ==========================================
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*.class
+*.log
+*.pyc
+*.swp
+.history/
+**/.history/
+.buildlog/
+
+# IntelliJ IDEA / Android Studio
+*.iml
+**/*.iml
+*.ipr
+*.iws
+.idea/
+**/.idea/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Melos
+.melos_tool/

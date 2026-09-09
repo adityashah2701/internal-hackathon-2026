@@ -1,0 +1,25 @@
+name: ps089
+repository: none
+
+packages:
+  - apps/*
+  - packages/*
+
+scripts:
+  analyze:
+    run: flutter analyze .
+    exec:
+      concurrency: 1
+    description: Run flutter analyze across all packages and apps.
+
+  test:
+    run: flutter test
+    exec:
+      concurrency: 1
+    packageFilters:
+      flutter: true
+    description: Run flutter test across Flutter packages and apps.
+
+  clean:
+    run: flutter clean
+    description: Clean build artifacts in all packages.
