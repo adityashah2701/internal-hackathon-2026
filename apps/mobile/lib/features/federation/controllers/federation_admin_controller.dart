@@ -56,7 +56,7 @@ class FederationAdminState {
   }
 }
 
-class FederationAdminNotifier extends Notifier<FederationAdminState> {
+class FederationAdminNotifier extends AutoDisposeNotifier<FederationAdminState> {
   @override
   FederationAdminState build() {
     Future<void>.microtask(loadDashboard);
@@ -121,9 +121,8 @@ class FederationAdminNotifier extends Notifier<FederationAdminState> {
   }
 }
 
-final NotifierProvider<FederationAdminNotifier, FederationAdminState>
+final AutoDisposeNotifierProvider<FederationAdminNotifier, FederationAdminState>
     federationAdminProvider =
-    NotifierProvider<FederationAdminNotifier, FederationAdminState>(
+    NotifierProvider.autoDispose<FederationAdminNotifier, FederationAdminState>(
   FederationAdminNotifier.new,
-  isAutoDispose: true,
 );

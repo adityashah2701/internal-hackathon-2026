@@ -50,7 +50,7 @@ class WorkerDashboardState {
   }
 }
 
-class WorkerDashboardNotifier extends Notifier<WorkerDashboardState> {
+class WorkerDashboardNotifier extends AutoDisposeNotifier<WorkerDashboardState> {
   @override
   WorkerDashboardState build() {
     final AsyncValue<AppAuthState> authAsync = ref.watch(authControllerProvider);
@@ -197,6 +197,66 @@ class WorkerDashboardNotifier extends Notifier<WorkerDashboardState> {
     }
   }
 
+  Future<void> toggleAvailability(bool isAvailable) async {
+    final String userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    state = state.copyWith(
+      profile: state.profile.copyWith(isAvailable: isAvailable),
+      clearError: true,
+      clearSuccess: true,
+    );
+
+    try {
+      final IWorkerRepository repo = ref.read(workerRepositoryProvider);
+      final WorkerProfile updated = await repo.toggleAvailability(
+        workerId: userId,
+        isAvailable: isAvailable,
+      );
+      state = state.copyWith(
+        profile: updated,
+        successMessage: isAvailable ? 'You are now ON-DUTY (Open for cooperative jobs).' : 'You are now OFF-DUTY.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Failed to update availability status: $e',
+      );
+    }
+  }
+
+  Future<void> updateSkillProfile({
+    required List<String> skills,
+    required int experienceYears,
+    required int hourlyRateInr,
+    int? dailyRateInr,
+  }) async {
+    final String userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    state = state.copyWith(isActionInProgress: true, clearError: true, clearSuccess: true);
+    try {
+      final IWorkerRepository repo = ref.read(workerRepositoryProvider);
+      final WorkerProfile updated = state.profile.copyWith(
+        skills: skills,
+        experienceYears: experienceYears,
+        hourlyRateInr: hourlyRateInr,
+        dailyRateInr: dailyRateInr ?? state.profile.dailyRateInr,
+      );
+
+      final WorkerProfile result = await repo.updateWorkerProfile(updated);
+      state = state.copyWith(
+        profile: result,
+        isActionInProgress: false,
+        successMessage: 'Trade skills and hourly rate updated successfully.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isActionInProgress: false,
+        errorMessage: 'Failed to update skill profile: $e',
+      );
+    }
+  }
+
   Future<void> submitForVerification() async {
     final String userId = _currentUserId;
     if (userId.isEmpty) return;
@@ -233,8 +293,7 @@ class WorkerDashboardNotifier extends Notifier<WorkerDashboardState> {
   }
 }
 
-final NotifierProvider<WorkerDashboardNotifier, WorkerDashboardState> workerDashboardProvider =
-    NotifierProvider<WorkerDashboardNotifier, WorkerDashboardState>(
+final AutoDisposeNotifierProvider<WorkerDashboardNotifier, WorkerDashboardState> workerDashboardProvider =
+    NotifierProvider.autoDispose<WorkerDashboardNotifier, WorkerDashboardState>(
   WorkerDashboardNotifier.new,
-  isAutoDispose: true,
 );

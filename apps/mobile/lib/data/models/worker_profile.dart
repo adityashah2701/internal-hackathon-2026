@@ -33,6 +33,8 @@ class WorkerProfile {
     this.skills = const <String>[],
     this.experienceYears = 0,
     this.dailyRateInr = 500,
+    this.hourlyRateInr = 150,
+    this.isAvailable = true,
     this.serviceArea = '',
     this.bio = '',
     this.verificationStatus = WorkerVerificationStatus.unsubmitted,
@@ -52,6 +54,8 @@ class WorkerProfile {
   final List<String> skills;
   final int experienceYears;
   final int dailyRateInr;
+  final int hourlyRateInr;
+  final bool isAvailable;
   final String serviceArea;
   final String bio;
   final WorkerVerificationStatus verificationStatus;
@@ -75,6 +79,8 @@ class WorkerProfile {
     List<String>? skills,
     int? experienceYears,
     int? dailyRateInr,
+    int? hourlyRateInr,
+    bool? isAvailable,
     String? serviceArea,
     String? bio,
     WorkerVerificationStatus? verificationStatus,
@@ -94,6 +100,8 @@ class WorkerProfile {
       skills: skills ?? this.skills,
       experienceYears: experienceYears ?? this.experienceYears,
       dailyRateInr: dailyRateInr ?? this.dailyRateInr,
+      hourlyRateInr: hourlyRateInr ?? this.hourlyRateInr,
+      isAvailable: isAvailable ?? this.isAvailable,
       serviceArea: serviceArea ?? this.serviceArea,
       bio: bio ?? this.bio,
       verificationStatus: verificationStatus ?? this.verificationStatus,
@@ -150,6 +158,8 @@ class WorkerProfile {
       skills: parsedSkills,
       experienceYears: (json['experience_years'] as num?)?.toInt() ?? 0,
       dailyRateInr: (json['daily_rate_inr'] as num?)?.toInt() ?? 500,
+      hourlyRateInr: (json['hourly_rate_inr'] as num?)?.toInt() ?? 150,
+      isAvailable: json['is_available'] as bool? ?? true,
       serviceArea: json['service_area'] as String? ?? '',
       bio: json['bio'] as String? ?? '',
       verificationStatus: WorkerVerificationStatus.fromDbValue(json['verification_status'] as String?),
@@ -171,6 +181,8 @@ class WorkerProfile {
       'skills': skills,
       'experience_years': experienceYears,
       'daily_rate_inr': dailyRateInr,
+      'hourly_rate_inr': hourlyRateInr,
+      'is_available': isAvailable,
       'service_area': serviceArea,
       'bio': bio,
       'verification_status': verificationStatus.dbValue,

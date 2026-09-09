@@ -218,6 +218,8 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
 
   Widget _buildPersonalInfoCard(
       BuildContext context, UserProfile? user, WorkerProfile profile, bool isDark) {
+    final String primaryTrade = profile.skills.isNotEmpty ? profile.skills.first : 'Service Technician';
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -229,12 +231,13 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            // Worker identity & role badge
             Row(
               children: <Widget>[
                 CircleAvatar(
-                  radius: 22,
+                  radius: 24,
                   backgroundColor: AppColors.roleWorker.withAlpha(25),
-                  child: const Icon(Icons.person_rounded, color: AppColors.roleWorker),
+                  child: const Icon(Icons.person_rounded, color: AppColors.roleWorker, size: 28),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -243,36 +246,148 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                     children: <Widget>[
                       Text(
                         user?.fullName.isNotEmpty == true ? user!.fullName : 'Cooperative Worker',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        user?.phoneNumber.isNotEmpty == true ? user!.phoneNumber : 'Phone not provided',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                        ),
+                      Row(
+                        children: <Widget>[
+                          Text(
+                            primaryTrade,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Rating summary
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withAlpha(30),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                SizedBox(width: 3),
+                                Text(
+                                  '4.9 (42)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.roleWorker.withAlpha(20),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'WORKER',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.roleWorker,
-                      letterSpacing: 0.5,
+                // Cooperative Verification Badge
+                if (profile.verificationStatus.isApproved)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withAlpha(20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.success, width: 1),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(Icons.verified_rounded, size: 14, color: AppColors.success),
+                        SizedBox(width: 4),
+                        Text(
+                          'FEDERATION CERTIFIED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.success,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withAlpha(20),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      profile.verificationStatus.displayName.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.warning,
+                      ),
                     ),
                   ),
-                ),
               ],
+            ),
+            const Divider(height: 28),
+
+            // Real-Time On-Duty / Off-Duty Availability Toggle
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: profile.isAvailable
+                    ? AppColors.success.withAlpha(15)
+                    : Colors.grey.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: profile.isAvailable ? AppColors.success : Colors.grey.withAlpha(60),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    profile.isAvailable ? Icons.bolt_rounded : Icons.bedtime_outlined,
+                    color: profile.isAvailable ? AppColors.success : Colors.grey,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          profile.isAvailable ? 'STATUS: ON-DUTY' : 'STATUS: OFF-DUTY',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: profile.isAvailable ? AppColors.success : Colors.grey[700],
+                          ),
+                        ),
+                        Text(
+                          profile.isAvailable
+                              ? 'Broadcasting live availability for cooperative service dispatch'
+                              : 'Off-duty: You will not receive customer requests right now',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: profile.isAvailable,
+                    activeColor: AppColors.success,
+                    onChanged: (bool val) {
+                      ref.read(workerDashboardProvider.notifier).toggleAvailability(val);
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -298,20 +413,19 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
               children: <Widget>[
                 const Expanded(
                   child: Text(
-                    'Trade & Qualifications',
+                    'Trade Skills & Certification',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
-                if (!profile.verificationStatus.isApproved)
-                  TextButton.icon(
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: const Text('Edit'),
-                    onPressed: () => _showEditSkillsModal(context, profile, societies),
-                  ),
+                TextButton.icon(
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Edit'),
+                  onPressed: () => _showEditSkillsModal(context, profile, societies),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            // Skills chips
+            // Skills chips with certified status indicator
             if (profile.skills.isEmpty)
               const Text(
                 'No skills selected. Tap Edit to add your primary trades.',
@@ -322,20 +436,36 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: profile.skills.map((String skill) {
+                  final bool isCert = profile.verificationStatus.isApproved;
                   return Chip(
-                    label: Text(skill),
-                    backgroundColor: AppColors.primary.withAlpha(18),
+                    avatar: Icon(
+                      isCert
+                          ? Icons.verified_rounded
+                          : profile.verificationStatus.isPending
+                              ? Icons.schedule_rounded
+                              : Icons.info_outline_rounded,
+                      size: 16,
+                      color: isCert
+                          ? AppColors.success
+                          : profile.verificationStatus.isPending
+                              ? AppColors.warning
+                              : Colors.grey,
+                    ),
+                    label: Text(
+                      '$skill (${isCert ? "Verified" : profile.verificationStatus.isPending ? "Under Review" : "Unverified"})',
+                    ),
+                    backgroundColor: AppColors.primary.withAlpha(15),
                     side: const BorderSide(color: AppColors.primary, width: 0.8),
                     labelStyle: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   );
                 }).toList(),
               ),
             const Divider(height: 28),
-            // Experience & Daily rate grid
+            // Experience, Hourly Rate, and Daily rate grid
             Row(
               children: <Widget>[
                 Expanded(
@@ -345,7 +475,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                       Text(
                         'EXPERIENCE',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                         ),
@@ -353,7 +483,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${profile.experienceYears} Years',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                     ],
                   ),
@@ -363,9 +493,33 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'BASE RATE',
+                        'HOURLY CHARGE',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${profile.hourlyRateInr} / hr',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'DAILY BASE',
+                        style: TextStyle(
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                         ),
@@ -375,7 +529,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
                         '₹${profile.dailyRateInr} / day',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                          fontSize: 14,
                           color: AppColors.primary,
                         ),
                       ),
@@ -724,6 +878,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
 
   late final Set<String> _selectedSkills;
   late final TextEditingController _experienceController;
+  late final TextEditingController _hourlyRateController;
   late final TextEditingController _dailyRateController;
   late final TextEditingController _serviceAreaController;
   late final TextEditingController _bioController;
@@ -734,6 +889,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
     super.initState();
     _selectedSkills = Set<String>.from(widget.profile.skills);
     _experienceController = TextEditingController(text: widget.profile.experienceYears.toString());
+    _hourlyRateController = TextEditingController(text: widget.profile.hourlyRateInr.toString());
     _dailyRateController = TextEditingController(text: widget.profile.dailyRateInr.toString());
     _serviceAreaController = TextEditingController(text: widget.profile.serviceArea);
     _bioController = TextEditingController(text: widget.profile.bio);
@@ -743,6 +899,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
   @override
   void dispose() {
     _experienceController.dispose();
+    _hourlyRateController.dispose();
     _dailyRateController.dispose();
     _serviceAreaController.dispose();
     _bioController.dispose();
@@ -815,13 +972,25 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _hourlyRateController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Hourly Rate',
+                      prefixText: '₹ ',
+                      suffixText: '/hr',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _dailyRateController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Daily Base Rate',
+                      labelText: 'Daily Rate',
                       prefixText: '₹ ',
                     ),
                   ),
@@ -840,7 +1009,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
             // Cooperative Society Dropdown
             DropdownButtonFormField<String>(
               isExpanded: true,
-              initialValue: _selectedCooperativeId,
+              value: _selectedCooperativeId,
               decoration: const InputDecoration(
                 labelText: 'Affiliated Cooperative Society',
               ),
@@ -860,11 +1029,18 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
               child: FilledButton(
                 onPressed: () {
                   final int exp = int.tryParse(_experienceController.text.trim()) ?? 0;
-                  final int rate = int.tryParse(_dailyRateController.text.trim()) ?? 500;
+                  final int hourly = int.tryParse(_hourlyRateController.text.trim()) ?? 150;
+                  final int daily = int.tryParse(_dailyRateController.text.trim()) ?? 500;
+                  ref.read(workerDashboardProvider.notifier).updateSkillProfile(
+                        skills: _selectedSkills.toList(),
+                        experienceYears: exp,
+                        hourlyRateInr: hourly,
+                        dailyRateInr: daily,
+                      );
                   ref.read(workerDashboardProvider.notifier).updateProfileDetails(
                         skills: _selectedSkills.toList(),
                         experienceYears: exp,
-                        dailyRateInr: rate,
+                        dailyRateInr: daily,
                         serviceArea: _serviceAreaController.text.trim(),
                         bio: _bioController.text.trim(),
                         cooperativeId: _selectedCooperativeId,
@@ -921,7 +1097,7 @@ class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
           const SizedBox(height: 8),
           DropdownButtonFormField<DocumentType>(
             isExpanded: true,
-            initialValue: _selectedType,
+            value: _selectedType,
             decoration: const InputDecoration(border: OutlineInputBorder()),
             items: DocumentType.values.map((DocumentType type) {
               return DropdownMenuItem<DocumentType>(
@@ -936,6 +1112,8 @@ class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
                   _sampleFileName = switch (val) {
                     DocumentType.aadhaar => 'aadhaar_card_proof.pdf',
                     DocumentType.tradeCertificate => 'iti_skill_certificate.pdf',
+                    DocumentType.cooperativeIdCard => 'cooperative_membership_card.pdf',
+                    DocumentType.policeVerification => 'police_verification_clearance.pdf',
                     DocumentType.voterId => 'voter_id_proof.pdf',
                     DocumentType.pan => 'pan_card_proof.pdf',
                   };

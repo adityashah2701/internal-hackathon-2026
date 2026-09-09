@@ -34,6 +34,11 @@ abstract interface class IWorkerRepository {
     required String filePath,
   });
 
+  Future<WorkerProfile> toggleAvailability({
+    required String workerId,
+    required bool isAvailable,
+  });
+
   Future<List<CooperativeSociety>> getCooperatives();
 }
 
@@ -176,9 +181,9 @@ class SupabaseWorkerRepository implements IWorkerRepository {
     final String storagePath = '$workerId/${timestamp}_$sanitizedName';
 
     try {
-      // 1. Upload to Supabase Storage bucket 'kyc-documents'
+      // 1. Upload to Supabase Storage bucket 'worker-documents' (fallback: 'kyc-documents')
       try {
-        await _safeClient.storage.from('kyc-documents').uploadBinary(
+        await _safeClient.storage.from('worker-documents').uploadBinary(
               storagePath,
               Uint8List.fromList(bytes),
               fileOptions: sb.FileOptions(
@@ -186,8 +191,19 @@ class SupabaseWorkerRepository implements IWorkerRepository {
                 upsert: true,
               ),
             );
-      } catch (storageErr) {
-        AppLogger.warning('Storage upload note: $storageErr');
+      } catch (workerDocsErr) {
+        try {
+          await _safeClient.storage.from('kyc-documents').uploadBinary(
+                storagePath,
+                Uint8List.fromList(bytes),
+                fileOptions: sb.FileOptions(
+                  contentType: mimeType,
+                  upsert: true,
+                ),
+              );
+        } catch (kycErr) {
+          AppLogger.warning('Storage upload note: $workerDocsErr / $kycErr');
+        }
       }
 
       // 2. Insert document record in PostgreSQL database
@@ -254,12 +270,47 @@ class SupabaseWorkerRepository implements IWorkerRepository {
     }
     try {
       try {
+        await _safeClient.storage.from('worker-documents').remove(<String>[filePath]);
+      } catch (_) {}
+      try {
         await _safeClient.storage.from('kyc-documents').remove(<String>[filePath]);
       } catch (_) {}
 
       await _safeClient.from('worker_documents').delete().eq('id', documentId);
     } catch (e) {
       AppLogger.warning('Error deleting document: $e');
+    }
+  }
+
+  @override
+  Future<WorkerProfile> toggleAvailability({
+    required String workerId,
+    required bool isAvailable,
+  }) async {
+    final WorkerProfile current = WorkerDataStore.getOrCreateProfile(workerId);
+    final WorkerProfile updated = current.copyWith(
+      isAvailable: isAvailable,
+      updatedAt: DateTime.now(),
+    );
+    WorkerDataStore.upsertProfile(updated);
+
+    try {
+      final Map<String, Object?> data = await _safeClient
+          .from('worker_profiles')
+          .update(<String, Object?>{
+            'is_available': isAvailable,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', workerId)
+          .select('*, cooperatives(name), profiles(full_name, phone_number, email)')
+          .single();
+
+      final WorkerProfile refreshed = WorkerProfile.fromJson(data);
+      WorkerDataStore.upsertProfile(refreshed);
+      return refreshed;
+    } catch (e) {
+      AppLogger.warning('toggleAvailability fallback: $e', tag: 'WorkerRepo');
+      return updated;
     }
   }
 

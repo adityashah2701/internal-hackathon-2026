@@ -1,6 +1,8 @@
 enum DocumentType {
   aadhaar('aadhaar', 'Aadhaar Card (Govt ID)'),
   tradeCertificate('trade_certificate', 'Trade / Skill Certificate (ITI/NSDC)'),
+  cooperativeIdCard('cooperative_id', 'Cooperative Membership Card'),
+  policeVerification('police_verification', 'Police Verification Certificate'),
   voterId('voter_id', 'Voter Identity Card'),
   pan('pan', 'Permanent Account Number (PAN)');
 

@@ -72,6 +72,9 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
       ),
       body: Column(
         children: <Widget>[
+          // Overview Metrics
+          _buildMetricsOverview(context, state, isDark),
+
           // Filter Tabs
           _buildFilterTabs(context, state),
 
@@ -95,6 +98,118 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                             },
                           ),
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricsOverview(BuildContext context, CooperativeAdminState state, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B2333) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.analytics_outlined, size: 18, color: AppColors.roleCooperative),
+              const SizedBox(width: 8),
+              Text(
+                'Cooperative Operations Overview',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _buildMetricTile(
+                  title: 'Active Workers',
+                  value: '${state.activeWorkersCount}',
+                  icon: Icons.badge_outlined,
+                  color: AppColors.roleWorker,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMetricTile(
+                  title: 'Jobs Done',
+                  value: '${state.totalBookingsCompleted}',
+                  icon: Icons.assignment_turned_in_outlined,
+                  color: AppColors.roleCustomer,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMetricTile(
+                  title: 'Welfare Pool',
+                  value: '₹${state.societyWelfarePoolInr}',
+                  icon: Icons.volunteer_activism_outlined,
+                  color: AppColors.roleCooperative,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withAlpha(12) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withAlpha(12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white60 : Colors.black54,
+            ),
           ),
         ],
       ),
@@ -576,6 +691,16 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
           'INCOME TAX DEPARTMENT • GOVT OF INDIA',
           Colors.purple.shade800,
           Icons.account_balance_rounded,
+        ),
+      DocumentType.cooperativeIdCard => (
+          'STATE COOPERATIVE SOCIETIES REGISTRAR',
+          Colors.green.shade800,
+          Icons.badge_outlined,
+        ),
+      DocumentType.policeVerification => (
+          'STATE POLICE VERIFICATION BUREAU',
+          Colors.indigo.shade800,
+          Icons.security_rounded,
         ),
     };
 

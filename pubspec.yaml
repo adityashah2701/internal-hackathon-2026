@@ -1,9 +1,9 @@
 name: ps089
 environment:
-  sdk: ">=3.12.2 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 dev_dependencies:
-  melos: ^8.6.0
+  melos: ^6.3.3
 
 workspace:
   - apps/mobile
