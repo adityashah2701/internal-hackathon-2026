@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
@@ -12,6 +15,8 @@ abstract interface class ICooperativeAdminRepository {
   Future<List<WorkerProfile>> getWorkers({String? statusFilter});
 
   Future<List<WorkerDocument>> getWorkerDocuments(String workerId);
+
+  Future<String?> getDocumentPayload(String filePath);
 
   Future<WorkerProfile> approveWorker({
     required String workerId,
@@ -70,11 +75,37 @@ class SupabaseCooperativeAdminRepository implements ICooperativeAdminRepository 
           .eq('worker_id', workerId);
 
       if (response.isNotEmpty) {
-        return response.map(WorkerDocument.fromJson).toList();
+        final List<WorkerDocument> docs = response.map(WorkerDocument.fromJson).toList();
+        final List<WorkerDocument> enriched = await Future.wait(docs.map((WorkerDocument doc) async {
+          if (doc.filePath.isNotEmpty) {
+            try {
+              final String signedUrl = await _safeClient.storage
+                  .from('kyc-documents')
+                  .createSignedUrl(doc.filePath, 3600);
+              return doc.copyWith(downloadUrl: signedUrl);
+            } catch (_) {
+              return doc;
+            }
+          }
+          return doc;
+        }));
+        return enriched;
       }
       return WorkerDataStore.documents[workerId] ?? <WorkerDocument>[];
     } catch (e) {
       return WorkerDataStore.documents[workerId] ?? <WorkerDocument>[];
+    }
+  }
+
+  @override
+  Future<String?> getDocumentPayload(String filePath) async {
+    if (filePath.isEmpty) return null;
+    try {
+      final Uint8List bytes = await _safeClient.storage.from('kyc-documents').download(filePath);
+      return utf8.decode(bytes, allowMalformed: true);
+    } catch (e) {
+      AppLogger.warning('CooperativeAdmin: Fallback payload lookup: $e');
+      return WorkerDataStore.documentPayloads[filePath];
     }
   }
 

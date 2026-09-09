@@ -7,6 +7,7 @@ import '../models/worker_profile.dart';
 abstract final class WorkerDataStore {
   static final Map<String, WorkerProfile> profiles = <String, WorkerProfile>{};
   static final Map<String, List<WorkerDocument>> documents = <String, List<WorkerDocument>>{};
+  static final Map<String, String> documentPayloads = <String, String>{};
 
   static WorkerProfile getOrCreateProfile(String workerId) {
     return profiles.putIfAbsent(
@@ -60,5 +61,6 @@ abstract final class WorkerDataStore {
   static void clear() {
     profiles.clear();
     documents.clear();
+    documentPayloads.clear();
   }
 }

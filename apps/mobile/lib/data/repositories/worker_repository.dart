@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -206,6 +207,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
 
       final WorkerDocument newDoc = WorkerDocument.fromJson(data);
       WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, newDoc);
+      WorkerDataStore.documentPayloads[storagePath] = utf8.decode(bytes, allowMalformed: true);
       return newDoc;
     } on sb.PostgrestException catch (e) {
       AppLogger.warning('PostgrestException inserting document record: ${e.message}', tag: 'WorkerRepo');
@@ -221,6 +223,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
         createdAt: DateTime.now(),
       );
       WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
+      WorkerDataStore.documentPayloads[storagePath] = utf8.decode(bytes, allowMalformed: true);
       return fallbackDoc;
     } catch (e, st) {
       AppLogger.error('Error in document upload workflow', error: e, stackTrace: st);
@@ -236,6 +239,7 @@ class SupabaseWorkerRepository implements IWorkerRepository {
         createdAt: DateTime.now(),
       );
       WorkerDataStore.documents.putIfAbsent(workerId, () => <WorkerDocument>[]).insert(0, fallbackDoc);
+      WorkerDataStore.documentPayloads[storagePath] = utf8.decode(bytes, allowMalformed: true);
       return fallbackDoc;
     }
   }

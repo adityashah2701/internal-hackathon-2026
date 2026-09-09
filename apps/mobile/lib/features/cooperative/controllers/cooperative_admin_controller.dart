@@ -97,6 +97,15 @@ class CooperativeAdminNotifier extends Notifier<CooperativeAdminState> {
     }
   }
 
+  Future<String?> inspectDocumentPayload(String filePath) async {
+    try {
+      final ICooperativeAdminRepository repo = ref.read(cooperativeAdminRepositoryProvider);
+      return await repo.getDocumentPayload(filePath);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> approveWorker(String workerId) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {

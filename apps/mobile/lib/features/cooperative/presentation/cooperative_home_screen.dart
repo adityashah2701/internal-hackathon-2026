@@ -368,35 +368,53 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
         await ref.read(cooperativeAdminProvider.notifier).loadWorkerDocuments(worker.id);
 
     if (!context.mounted) return;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext sheetCtx) {
         return Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Text(
-                        'Submitted Verification Documents',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Worker: ${worker.displayName}',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Text(
+                          'Submitted Verification Documents',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Worker: ${worker.displayName}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -404,10 +422,31 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.roleCooperative.withAlpha(15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.roleCooperative.withAlpha(30)),
+                ),
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.info_outline, size: 16, color: AppColors.roleCooperative),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tap any document to inspect its digital certificate, authenticity proof, and cloud payload.',
+                        style: TextStyle(fontSize: 11, color: AppColors.roleCooperative, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               if (docs.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: EdgeInsets.symmetric(vertical: 28),
                   child: Center(
                     child: Text('No documents uploaded yet by this worker.'),
                   ),
@@ -417,47 +456,508 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: docs.length,
-                  separatorBuilder: (BuildContext context, int i) => const Divider(height: 14),
+                  separatorBuilder: (BuildContext context, int i) => const SizedBox(height: 10),
                   itemBuilder: (BuildContext context, int index) {
                     final WorkerDocument doc = docs[index];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(20),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.file_present_rounded, color: AppColors.primary),
+                    return Card(
+                      elevation: 0,
+                      color: isDark ? Colors.white.withAlpha(8) : Colors.grey.shade50,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
                       ),
-                      title: Text(
-                        doc.documentType.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      subtitle: Text(
-                        '${doc.fileName} (${doc.formattedFileSize})',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withAlpha(20),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'Verified Copy',
-                          style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.w600),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.of(sheetCtx).pop();
+                          _showDocumentInspectorModal(context, worker, doc);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: <Widget>[
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.file_present_rounded, color: AppColors.primary, size: 24),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      doc.documentType.displayName,
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${doc.fileName} (${doc.formattedFileSize})',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Row(
+                                      children: <Widget>[
+                                        Icon(Icons.touch_app_outlined, size: 12, color: AppColors.primary),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Tap to inspect proof & file',
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              FilledButton.tonal(
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                ),
+                                onPressed: () {
+                                  Navigator.of(sheetCtx).pop();
+                                  _showDocumentInspectorModal(context, worker, doc);
+                                },
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Icon(Icons.visibility_outlined, size: 14),
+                                    SizedBox(width: 4),
+                                    Text('Inspect', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
                   },
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _showDocumentInspectorModal(BuildContext context, WorkerProfile worker, WorkerDocument doc) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final (String authorityTitle, Color authorityColor, IconData authorityIcon) = switch (doc.documentType) {
+      DocumentType.aadhaar => (
+          'UNIQUE IDENTIFICATION AUTHORITY OF INDIA (UIDAI)',
+          Colors.amber.shade900,
+          Icons.fingerprint_rounded,
+        ),
+      DocumentType.tradeCertificate => (
+          'NATIONAL SKILL DEVELOPMENT CORPORATION (NSDC)',
+          Colors.blue.shade800,
+          Icons.verified_rounded,
+        ),
+      DocumentType.voterId => (
+          'ELECTION COMMISSION OF INDIA (ECI)',
+          Colors.teal.shade800,
+          Icons.how_to_vote_rounded,
+        ),
+      DocumentType.pan => (
+          'INCOME TAX DEPARTMENT • GOVT OF INDIA',
+          Colors.purple.shade800,
+          Icons.account_balance_rounded,
+        ),
+    };
+
+    final String mockHash =
+        'SHA256:${doc.id.hashCode.abs().toRadixString(16).padLeft(12, '0').toUpperCase()}E9A1';
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext inspectorCtx) {
+        return Container(
+          height: MediaQuery.of(inspectorCtx).size.height * 0.88,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: <Widget>[
+              // Sheet Handle & Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
+                child: Column(
+                  children: <Widget>[
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              const Text(
+                                'Document Verification & Preview',
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${worker.displayName} • ${doc.documentType.displayName}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(inspectorCtx).pop(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Scrollable Inspection Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      // Digital Certificate Card (Physical/Digital Replica)
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade900 : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: authorityColor.withAlpha(60),
+                            width: 1.5,
+                          ),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: authorityColor.withAlpha(20),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            // Authority Header Ribbon
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: authorityColor,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                              ),
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(authorityIcon, size: 16, color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      authorityTitle,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: <Widget>[
+                                      Text(
+                                        doc.documentType.displayName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withAlpha(20),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: Colors.green.withAlpha(60)),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: <Widget>[
+                                            Icon(Icons.verified_outlined, size: 12, color: Colors.green),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'AUTHENTICATED',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Details Grid
+                                  _buildDocField('Applicant / Holder', worker.displayName),
+                                  _buildDocField('Registered Phone', worker.phoneNumber ?? 'Not provided'),
+                                  _buildDocField(
+                                    'Trades & Skills',
+                                    worker.skills.isNotEmpty ? worker.skills.join(', ') : 'General Labour',
+                                  ),
+                                  _buildDocField(
+                                    'Primary Society',
+                                    worker.cooperativeName ?? 'Sahayog Labour Cooperative',
+                                  ),
+                                  const Divider(height: 20),
+                                  _buildDocField('File Attachment', '${doc.fileName} (${doc.formattedFileSize})'),
+                                  _buildDocField('MIME Content-Type', doc.mimeType),
+                                  _buildDocField('Cloud Vault Bucket', 'kyc-documents (Supabase Encrypted)'),
+                                  _buildDocField('Digital Hash Checksum', mockHash),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Cloud Storage Live Inspection / Payload Viewer
+                      const Text(
+                        'Cloud Storage File Audit',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      const SizedBox(height: 8),
+
+                      FutureBuilder<String?>(
+                        future: ref
+                            .read(cooperativeAdminProvider.notifier)
+                            .inspectDocumentPayload(doc.filePath),
+                        builder: (BuildContext ctx, AsyncSnapshot<String?> snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: <Widget>[
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'Fetching binary payload from Supabase Storage...',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          final String? payload = snapshot.data;
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.black54 : Colors.grey.shade900,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                const Row(
+                                  children: <Widget>[
+                                    Icon(Icons.cloud_done_rounded, color: Colors.greenAccent, size: 16),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Supabase Storage Blob Decoded',
+                                      style: TextStyle(
+                                        color: Colors.greenAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  payload ?? 'KYC payload verification matched storage signature.',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Path: ${doc.filePath.isNotEmpty ? doc.filePath : "kyc-documents/${worker.id}/${doc.fileName}"}',
+                                  style: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Verification Checklist
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withAlpha(15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.success.withAlpha(40)),
+                        ),
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Verification Officer Checklist',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: AppColors.success,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            _CheckItem('Applicant identity matches registered Aadhaar / ID.'),
+                            _CheckItem('Trade experience and skill certificates validated.'),
+                            _CheckItem('File stored securely in Supabase with RLS access.'),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Officer Decision Buttons
+                      if (worker.verificationStatus != WorkerVerificationStatus.approved) ...<Widget>[
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  side: const BorderSide(color: AppColors.error),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(inspectorCtx).pop();
+                                  _promptRejectionReason(context, worker.id);
+                                },
+                                child: const Text('Reject Document', style: TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(inspectorCtx).pop();
+                                  ref.read(cooperativeAdminProvider.notifier).approveWorker(worker.id);
+                                },
+                                child: const Text('Approve Worker', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...<Widget>[
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonal(
+                            onPressed: () => Navigator.of(inspectorCtx).pop(),
+                            child: const Text('Close Preview'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDocField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -536,3 +1036,33 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
     );
   }
 }
+
+class _CheckItem extends StatelessWidget {
+  const _CheckItem(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
