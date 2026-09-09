@@ -34,13 +34,15 @@ create index if not exists cooperatives_state_district_idx on public.cooperative
 alter table public.cooperatives enable row level security;
 alter table public.cooperatives force row level security;
 
--- Cooperatives select policy: visible to all authenticated users
+-- Drop and recreate cooperatives policies
+drop policy if exists cooperatives_select_all on public.cooperatives;
+drop policy if exists cooperatives_admin_modify on public.cooperatives;
+
 create policy cooperatives_select_all on public.cooperatives
   for select
   to authenticated
   using (true);
 
--- Cooperatives insert/update policy: only admins
 create policy cooperatives_admin_modify on public.cooperatives
   for all
   to authenticated
@@ -71,10 +73,12 @@ create index if not exists worker_profiles_status_idx on public.worker_profiles 
 alter table public.worker_profiles enable row level security;
 alter table public.worker_profiles force row level security;
 
--- Worker Profiles SELECT:
--- 1) Worker views their own profile
--- 2) Cooperative and Federation Admins can view all worker profiles
--- 3) Authenticated users can view approved/verified workers
+-- Drop and recreate worker_profiles policies
+drop policy if exists worker_profiles_select on public.worker_profiles;
+drop policy if exists worker_profiles_insert_own on public.worker_profiles;
+drop policy if exists worker_profiles_update_own on public.worker_profiles;
+drop policy if exists worker_profiles_update_admin on public.worker_profiles;
+
 create policy worker_profiles_select on public.worker_profiles
   for select
   to authenticated
@@ -84,8 +88,6 @@ create policy worker_profiles_select on public.worker_profiles
     or verification_status = 'approved'
   );
 
--- Worker Profiles INSERT:
--- Worker can create their own worker profile
 create policy worker_profiles_insert_own on public.worker_profiles
   for insert
   to authenticated
@@ -93,9 +95,6 @@ create policy worker_profiles_insert_own on public.worker_profiles
     (select auth.uid()) = id
   );
 
--- Worker Profiles UPDATE (Worker self-update):
--- Worker can edit their own details and set status to 'unsubmitted' or 'pending' (submit for review),
--- but CANNOT approve themselves!
 create policy worker_profiles_update_own on public.worker_profiles
   for update
   to authenticated
@@ -105,8 +104,6 @@ create policy worker_profiles_update_own on public.worker_profiles
     and verification_status in ('unsubmitted', 'pending')
   );
 
--- Worker Profiles UPDATE (Admin update):
--- Admins can update any field including verification_status, rejection_reason, verified_at, verified_by
 create policy worker_profiles_update_admin on public.worker_profiles
   for update
   to authenticated
@@ -131,8 +128,11 @@ create index if not exists worker_documents_worker_id_idx on public.worker_docum
 alter table public.worker_documents enable row level security;
 alter table public.worker_documents force row level security;
 
--- Worker Documents SELECT:
--- Worker can view their own, and Admins can view all
+-- Drop and recreate worker_documents policies
+drop policy if exists worker_documents_select on public.worker_documents;
+drop policy if exists worker_documents_insert_own on public.worker_documents;
+drop policy if exists worker_documents_delete_own on public.worker_documents;
+
 create policy worker_documents_select on public.worker_documents
   for select
   to authenticated
@@ -141,8 +141,6 @@ create policy worker_documents_select on public.worker_documents
     or (select public.is_admin_or_officer())
   );
 
--- Worker Documents INSERT:
--- Worker can insert their own document records
 create policy worker_documents_insert_own on public.worker_documents
   for insert
   to authenticated
@@ -150,8 +148,6 @@ create policy worker_documents_insert_own on public.worker_documents
     (select auth.uid()) = worker_id
   );
 
--- Worker Documents DELETE:
--- Worker can delete their own documents
 create policy worker_documents_delete_own on public.worker_documents
   for delete
   to authenticated
@@ -161,6 +157,7 @@ create policy worker_documents_delete_own on public.worker_documents
 
 -- 5. Update Profiles Table SELECT Policy so Admins can inspect Worker Profiles
 drop policy if exists profiles_select_own on public.profiles;
+drop policy if exists profiles_select_unified on public.profiles;
 
 create policy profiles_select_unified on public.profiles
   for select
@@ -176,8 +173,11 @@ insert into storage.buckets (id, name, public)
 values ('kyc-documents', 'kyc-documents', false)
 on conflict (id) do nothing;
 
--- Storage policies:
--- Workers upload to folder: {worker_id}/{filename}
+-- Drop and recreate storage policies
+drop policy if exists storage_kyc_worker_insert on storage.objects;
+drop policy if exists storage_kyc_select on storage.objects;
+drop policy if exists storage_kyc_worker_delete on storage.objects;
+
 create policy storage_kyc_worker_insert on storage.objects
   for insert to authenticated
   with check (
