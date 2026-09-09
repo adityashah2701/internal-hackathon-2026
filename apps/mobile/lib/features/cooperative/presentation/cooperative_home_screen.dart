@@ -274,39 +274,50 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
             const Divider(height: 24),
 
             // Action row: Inspect KYC documents & Approve/Reject
-            Row(
-              children: <Widget>[
-                TextButton.icon(
-                  icon: const Icon(Icons.description_outlined, size: 16),
-                  label: const Text('View Documents'),
-                  onPressed: () => _showDocumentsDialog(context, worker),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.description_outlined, size: 16),
+                label: const Text('View Documents'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                const Spacer(),
-                if (worker.verificationStatus != WorkerVerificationStatus.approved) ...<Widget>[
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side: const BorderSide(color: AppColors.error),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      minimumSize: Size.zero,
+                onPressed: () => _showDocumentsDialog(context, worker),
+              ),
+            ),
+            if (worker.verificationStatus != WorkerVerificationStatus.approved) ...<Widget>[
+              const SizedBox(height: 10),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => _promptRejectionReason(context, worker.id),
+                      child: const Text('Reject', style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
-                    onPressed: () => _promptRejectionReason(context, worker.id),
-                    child: const Text('Reject'),
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      minimumSize: Size.zero,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () =>
+                          ref.read(cooperativeAdminProvider.notifier).approveWorker(worker.id),
+                      child: const Text('Approve', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: () =>
-                        ref.read(cooperativeAdminProvider.notifier).approveWorker(worker.id),
-                    child: const Text('Approve'),
                   ),
                 ],
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),

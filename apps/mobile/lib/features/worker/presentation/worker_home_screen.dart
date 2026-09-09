@@ -839,6 +839,7 @@ class _EditTradeSkillsSheetState extends ConsumerState<_EditTradeSkillsSheet> {
             const SizedBox(height: 14),
             // Cooperative Society Dropdown
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: _selectedCooperativeId,
               decoration: const InputDecoration(
                 labelText: 'Affiliated Cooperative Society',
@@ -919,6 +920,7 @@ class _UploadDocumentSheetState extends ConsumerState<_UploadDocumentSheet> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<DocumentType>(
+            isExpanded: true,
             initialValue: _selectedType,
             decoration: const InputDecoration(border: OutlineInputBorder()),
             items: DocumentType.values.map((DocumentType type) {
