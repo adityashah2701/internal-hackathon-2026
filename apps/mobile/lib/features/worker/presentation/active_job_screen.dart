@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/booking.dart';
+import '../../common/presentation/widgets/chat_call_modal.dart';
+import '../../common/presentation/widgets/safety_sos_modal.dart';
 import '../controllers/worker_controller.dart';
 
 class ActiveJobScreen extends ConsumerStatefulWidget {
@@ -76,6 +78,36 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Chat & Call Customer',
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (BuildContext ctx) => ChatCallModal(
+                  peerName: booking.customerName ?? 'Customer',
+                  peerRole: 'Customer',
+                  trackingCode: booking.trackingCode,
+                ),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Safety & SOS',
+            icon: const Icon(Icons.shield_outlined, color: AppColors.error),
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (BuildContext ctx) => const SafetySosModal(),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

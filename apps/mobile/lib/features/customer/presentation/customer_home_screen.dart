@@ -9,6 +9,7 @@ import '../../auth/controllers/auth_controller.dart';
 import '../../common/presentation/notification_screen.dart';
 import '../controllers/customer_booking_controller.dart';
 import 'payment_screen.dart';
+import 'widgets/worker_matching_radar_modal.dart';
 
 class CustomerHomeScreen extends ConsumerStatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -45,7 +46,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext sheetCtx) {
-        return _BookingWizardModal(category: category);
+        return BookingWizardModal(category: category);
       },
     );
   }
@@ -588,16 +589,16 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 // 4-STEP BOOKING FLOW MODAL BOTTOM SHEET
 // -------------------------------------------------------------
 
-class _BookingWizardModal extends ConsumerStatefulWidget {
-  const _BookingWizardModal({required this.category});
+class BookingWizardModal extends ConsumerStatefulWidget {
+  const BookingWizardModal({super.key, required this.category});
 
   final ServiceCategory category;
 
   @override
-  ConsumerState<_BookingWizardModal> createState() => _BookingWizardModalState();
+  ConsumerState<BookingWizardModal> createState() => _BookingWizardModalState();
 }
 
-class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
+class _BookingWizardModalState extends ConsumerState<BookingWizardModal> {
   int _currentStep = 0;
   late String _selectedService;
   final TextEditingController _descController = TextEditingController();
@@ -658,85 +659,15 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
     Navigator.of(context).pop();
 
     if (created != null) {
-      _showConfirmationDialog(context, created);
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext sheetCtx) {
+          return WorkerMatchingRadarModal(booking: created);
+        },
+      );
     }
-  }
-
-  void _showConfirmationDialog(BuildContext context, Booking booking) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogCtx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 48),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Booking Confirmed!',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Your cooperative service request has been queued.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Text(
-                      'TRACKING ID',
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      booking.trackingCode,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: AppColors.primary,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Estimated Total: ₹${booking.totalAmount} (inclusive of ₹${booking.welfareFee} cooperative pool contribution)',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const Text('Done'),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override

@@ -11,6 +11,7 @@ import '../../../data/models/worker_profile.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../common/presentation/notification_screen.dart';
 import '../controllers/worker_controller.dart';
+import 'widgets/incoming_job_alert_modal.dart';
 
 class WorkerHomeScreen extends ConsumerStatefulWidget {
   const WorkerHomeScreen({super.key});
@@ -879,7 +880,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(Icons.work_off_rounded, size: 48, color: Colors.grey),
+              const Icon(Icons.work_off_rounded, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
               Text(
                 'You are currently OFF-DUTY.\nToggle your status in Profile to receive jobs.',
@@ -894,27 +895,97 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(workerDashboardProvider.notifier).loadDashboard(),
-      child: state.availableBookings.isEmpty
-          ? Center(
-              child: Text(
-                'No new jobs in your area matching your skills.',
-                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          // Page 12 Simulation Banner
+          Container(
+            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.primary.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.timer_rounded, color: AppColors.primary, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'Instant Dispatch Simulator',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                      Text(
+                        'Test the 30-second live countdown incoming job alert.',
+                        style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () => _showIncomingJobAlert(context),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('Test Alert', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+
+          if (state.availableBookings.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  'No pending jobs in your area matching your skills.',
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                ),
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.availableBookings.length,
-              itemBuilder: (BuildContext context, int index) {
-                final Booking booking = state.availableBookings[index];
-                return _buildBookingCard(
-                  context,
-                  booking: booking,
-                  isDark: isDark,
-                  primaryActionText: 'Accept Job',
-                  onPrimaryAction: () => ref.read(workerDashboardProvider.notifier).acceptBooking(booking.id),
-                );
-              },
-            ),
+          else
+            ...state.availableBookings.map((Booking booking) {
+              return _buildBookingCard(
+                context,
+                booking: booking,
+                isDark: isDark,
+                primaryActionText: 'View Dispatch Alert',
+                onPrimaryAction: () => _showIncomingJobAlert(context, booking),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  void _showIncomingJobAlert(BuildContext context, [Booking? booking]) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetCtx) {
+        return IncomingJobAlertModal(
+          booking: booking,
+          onAccept: () {
+            if (booking != null) {
+              ref.read(workerDashboardProvider.notifier).acceptBooking(booking.id);
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Job Accepted! Please head to customer location.'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

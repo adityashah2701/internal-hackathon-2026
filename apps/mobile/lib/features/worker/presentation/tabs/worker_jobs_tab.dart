@@ -132,7 +132,7 @@ class _WorkerJobsTabState extends ConsumerState<WorkerJobsTab> with SingleTicker
                 const SizedBox(width: 16),
                 const Icon(Icons.access_time, size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text(job.timeSlot ?? 'Anytime', style: const TextStyle(color: Colors.grey)),
+                Text(job.timeSlot.isNotEmpty ? job.timeSlot : 'Anytime', style: const TextStyle(color: Colors.grey)),
               ],
             ),
             const SizedBox(height: 8),

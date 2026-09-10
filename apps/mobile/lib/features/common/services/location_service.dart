@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import '../../../core/errors/app_exception.dart';
 
 class LocationService {

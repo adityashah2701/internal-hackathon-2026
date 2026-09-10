@@ -95,6 +95,8 @@ class CustomerDashboardNotifier extends AutoDisposeNotifier<CustomerDashboardSta
   }
 
   /// Load service categories and services from Supabase.
+  Future<void> loadCategories() => loadServiceCatalog();
+
   Future<void> loadServiceCatalog() async {
     state = state.copyWith(isCatalogLoading: true);
     try {

@@ -98,6 +98,9 @@ class Booking {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// 4-digit OTP code to verify worker on-site arrival
+  String get startOtp => trackingCode.length >= 4 ? trackingCode.substring(trackingCode.length - 4) : '4821';
+
   Booking copyWith({
     String? id,
     String? trackingCode,
