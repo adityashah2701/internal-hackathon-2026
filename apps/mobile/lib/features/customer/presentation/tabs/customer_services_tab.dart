@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../data/models/booking.dart';
 import '../../../../data/models/service_category.dart';
 import '../../controllers/customer_booking_controller.dart';
+import '../../utils/service_image_helper.dart';
 import '../../../common/presentation/widgets/empty_state.dart';
 
 class CustomerServicesTab extends ConsumerWidget {
@@ -69,8 +70,6 @@ class CustomerServicesTab extends ConsumerWidget {
   }
 
   Widget _buildCategorySection(BuildContext context, WidgetRef ref, ServiceCategory category, bool isDark) {
-    final IconData icon = _mapIconName(category.iconName);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -78,13 +77,20 @@ class CustomerServicesTab extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Image.network(
+                    ServiceImageHelper.getCategoryImageUrl(category.name),
+                    fit: BoxFit.cover,
+                    errorBuilder: (BuildContext ctx, Object err, StackTrace? stack) => Container(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      child: const Icon(Icons.handyman_rounded, color: AppColors.primary, size: 22),
+                    ),
+                  ),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -139,9 +145,31 @@ class CustomerServicesTab extends ConsumerWidget {
   }
 
   Widget _buildServiceTile(BuildContext context, WidgetRef ref, ServiceCategory category, Service service, bool isDark) {
+    final String serviceImageUrl = ServiceImageHelper.getServiceImageUrl(category.name, service.name);
+
     return Card(
       margin: const EdgeInsets.only(left: 8, bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+      ),
       child: ListTile(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Image.network(
+              serviceImageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (BuildContext ctx, Object err, StackTrace? stack) => Container(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                child: const Icon(Icons.handyman_outlined, color: AppColors.primary, size: 20),
+              ),
+            ),
+          ),
+        ),
         title: Text(service.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +213,7 @@ class CustomerServicesTab extends ConsumerWidget {
           ),
           child: const Text('Book', style: TextStyle(fontSize: 13)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       ),
     );
   }
@@ -229,6 +257,19 @@ class CustomerServicesTab extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    // Photography Banner
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        height: 120,
+                        width: double.infinity,
+                        child: Image.network(
+                          ServiceImageHelper.getServiceImageUrl(category.name, service.name),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text('Book ${service.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(
@@ -333,20 +374,5 @@ class CustomerServicesTab extends ConsumerWidget {
         );
       },
     );
-  }
-
-  IconData _mapIconName(String iconName) {
-    return switch (iconName) {
-      'electrical_services' => Icons.electrical_services,
-      'plumbing' => Icons.plumbing,
-      'handyman' => Icons.handyman,
-      'ac_unit' => Icons.ac_unit,
-      'format_paint' || 'format_paint_rounded' => Icons.format_paint,
-      'carpenter' => Icons.carpenter,
-      'cleaning_services' => Icons.cleaning_services,
-      'home_repair_service' => Icons.home_repair_service,
-      'build' || 'build_rounded' => Icons.build_rounded,
-      _ => Icons.build_rounded,
-    };
   }
 }

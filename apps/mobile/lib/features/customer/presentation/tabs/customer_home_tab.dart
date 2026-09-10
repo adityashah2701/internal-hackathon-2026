@@ -8,6 +8,7 @@ import '../../../../data/models/service_category.dart';
 import '../../../../data/models/user_profile.dart';
 import '../../../auth/controllers/auth_controller.dart';
 import '../../controllers/customer_booking_controller.dart';
+import '../../utils/service_image_helper.dart';
 
 class CustomerHomeTab extends ConsumerWidget {
   const CustomerHomeTab({super.key});
@@ -131,14 +132,14 @@ class CustomerHomeTab extends ConsumerWidget {
   Widget _buildServiceGrid(BuildContext context, CustomerDashboardState dashState, bool isDark) {
     if (dashState.isCatalogLoading) {
       return const SizedBox(
-        height: 110,
+        height: 156,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (dashState.categories.isEmpty) {
       return SizedBox(
-        height: 110,
+        height: 156,
         child: Center(
           child: Text(
             'No services available yet',
@@ -149,7 +150,7 @@ class CustomerHomeTab extends ConsumerWidget {
     }
 
     return SizedBox(
-      height: 110,
+      height: 156,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: dashState.categories.length,
@@ -162,31 +163,112 @@ class CustomerHomeTab extends ConsumerWidget {
   }
 
   Widget _buildServiceCard(BuildContext context, ServiceCategory category, bool isDark) {
-    final IconData icon = _mapIconName(category.iconName);
+    final String imageUrl = ServiceImageHelper.getCategoryImageUrl(category.name);
 
-    return GestureDetector(
+    return InkWell(
       onTap: () => context.go('/customer/services'),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: 100,
-        margin: const EdgeInsets.only(right: 16),
+        width: 120,
+        margin: const EdgeInsets.only(right: 14),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          color: isDark ? AppColors.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(icon, size: 32, color: AppColors.primary),
-            const SizedBox(height: 12),
-            Text(
-              category.name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            width: 1.2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // Actual photograph of the service
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (BuildContext ctx, Widget child, ImageChunkEvent? progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (BuildContext ctx, Object err, StackTrace? stack) {
+                        return Container(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                          child: const Icon(Icons.handyman_rounded, color: AppColors.primary, size: 28),
+                        );
+                      },
+                    ),
+                    // Gradient shadow overlay at bottom of image
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 28,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: <Color>[
+                              Colors.transparent,
+                              (isDark ? AppColors.surfaceDark : Colors.white).withValues(alpha: 0.8),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Service Title & Starting Price
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      category.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      category.basePrice > 0 ? 'from ₹${category.basePrice}' : 'Available Now',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -308,20 +390,5 @@ class CustomerHomeTab extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  IconData _mapIconName(String iconName) {
-    return switch (iconName) {
-      'electrical_services' => Icons.electrical_services,
-      'plumbing' => Icons.plumbing,
-      'handyman' => Icons.handyman,
-      'ac_unit' => Icons.ac_unit,
-      'format_paint' || 'format_paint_rounded' => Icons.format_paint,
-      'carpenter' => Icons.carpenter,
-      'cleaning_services' => Icons.cleaning_services,
-      'home_repair_service' => Icons.home_repair_service,
-      'build' || 'build_rounded' => Icons.build_rounded,
-      _ => Icons.build_rounded,
-    };
   }
 }

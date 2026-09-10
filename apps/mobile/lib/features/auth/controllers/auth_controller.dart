@@ -9,6 +9,7 @@ import '../../../data/models/user_profile.dart';
 import '../../../data/models/user_role.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/profile_repository.dart';
+import 'registration_draft_provider.dart';
 
 sealed class AppAuthState {
   const AppAuthState();
@@ -277,6 +278,56 @@ class AuthController extends Notifier<AsyncValue<AppAuthState>> {
       state = AsyncValue<AppAuthState>.data(
         AuthOnboardingRequired(user: user, profile: currentState.profile),
       );
+    }
+  }
+
+  /// Defers all database and auth creation until full registration & onboarding is complete
+  Future<void> registerAndCompleteOnboarding({
+    required RegistrationDraft draft,
+  }) async {
+    state = const AsyncValue<AppAuthState>.loading();
+    final IAuthRepository authRepo = ref.read(authRepositoryProvider);
+    final IProfileRepository profileRepo = ref.read(profileRepositoryProvider);
+
+    try {
+      // 1. Create auth user in Supabase
+      final sb.AuthResponse response = await authRepo.signUpWithEmail(
+        email: draft.email,
+        password: draft.password,
+        fullName: draft.fullName,
+        role: draft.role,
+      );
+
+      final sb.User? user = response.user;
+      if (user == null) {
+        throw const UnexpectedException(
+          message: 'Registration failed. Authentication service did not return an active session.',
+        );
+      }
+
+      // 2. Commit complete profile info with is_onboarded = true
+      final UserProfile profile = await profileRepo.completeOnboarding(
+        userId: user.id,
+        email: draft.email,
+        fullName: draft.fullName,
+        phoneNumber: draft.phoneNumber,
+        role: draft.role,
+      );
+
+      // 3. Authenticate user into application state
+      state = AsyncValue<AppAuthState>.data(
+        AuthAuthenticated(user: user, profile: profile),
+      );
+    } on AppException catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(Failure.fromException(e), st);
+      // Revert state back to unauthenticated if registration fails
+      state = const AsyncValue<AppAuthState>.data(AuthUnauthenticated());
+    } catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(
+        UnexpectedFailure(message: 'Registration and profile setup failed: ${e.toString()}'),
+        st,
+      );
+      state = const AsyncValue<AppAuthState>.data(AuthUnauthenticated());
     }
   }
 

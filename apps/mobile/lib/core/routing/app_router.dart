@@ -291,10 +291,11 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       // Fallback state if authAsync is loading and value is temporarily null
       final AppAuthState effectiveState = authState ?? const AuthUnauthenticated();
 
-      // 1. Unauthenticated: Force to Login or Register
+      // 1. Unauthenticated: Force to Login, Register, or Onboarding Setup
       if (effectiveState is AuthUnauthenticated) {
         final bool isAuthRoute = location == AppRoutes.login || 
                                  location == AppRoutes.register || 
+                                 location == AppRoutes.onboarding ||
                                  location == AppRoutes.phoneLogin || 
                                  location == AppRoutes.otpVerify;
         return isAuthRoute ? null : AppRoutes.login;

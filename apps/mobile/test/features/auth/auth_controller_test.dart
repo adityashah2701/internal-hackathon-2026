@@ -45,6 +45,14 @@ class FakeAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> signInWithOtp({required String phone}) async {}
+
+  @override
+  Future<sb.AuthResponse> verifyOtp({required String phone, required String token}) async {
+    return sb.AuthResponse();
+  }
+
+  @override
   Future<void> signOut() async {
     mockUser = null;
     _authStreamController.add(const sb.AuthState(sb.AuthChangeEvent.signedOut, null));

@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/registration_draft_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -34,11 +35,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _handleRegister() {
     if (!_formKey.currentState!.validate()) return;
 
-    ref.read(authControllerProvider.notifier).signUp(
+    // Store credentials in draft state; do NOT commit to database until full onboarding is finished!
+    ref.read(registrationDraftProvider.notifier).updateCredentials(
+          fullName: _fullNameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          fullName: _fullNameController.text.trim(),
         );
+
+    context.push(AppRoutes.onboarding);
   }
 
   @override
@@ -48,10 +52,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     ref.listen<AsyncValue<AppAuthState>>(authControllerProvider, (AsyncValue<AppAuthState>? prev, AsyncValue<AppAuthState> next) {
       if (next.hasError && !next.isLoading) {
+        final String errText = next.error.toString();
+        final bool isAlreadyRegistered = errText.toLowerCase().contains('already registered') ||
+            errText.contains('422');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.error.toString()),
+            content: Text(
+              isAlreadyRegistered
+                  ? 'An account with this email already exists. Please sign in.'
+                  : errText,
+            ),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 6),
+            action: isAlreadyRegistered
+                ? SnackBarAction(
+                    label: 'Sign In',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      context.go(AppRoutes.login);
+                    },
+                  )
+                : null,
           ),
         );
       }
@@ -186,7 +209,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Register Account', style: TextStyle(fontSize: 16)),
+                      : const Text('Continue to Profile & Location Setup', style: TextStyle(fontSize: 16)),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your details remain private in local memory and are only committed to the database upon full verification.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
