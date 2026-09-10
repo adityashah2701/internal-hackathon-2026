@@ -77,12 +77,16 @@ class SupabaseBookingRepository implements IBookingRepository {
   @override
   Future<Booking> createBooking(Booking booking) async {
     final String trackingCode = 'BK-${(1000 + Random().nextInt(9000))}-${DateTime.now().year % 100}';
+    final String startCode = (1000 + Random().nextInt(9000)).toString(); // 4 digit code
 
     final Map<String, Object?> payload = booking.toJson();
     // Let DB generate the UUID
     payload.remove('id');
     if (booking.trackingCode.isEmpty) {
       payload['tracking_code'] = trackingCode;
+    }
+    if (booking.startCode == null || booking.startCode!.isEmpty) {
+      payload['start_code'] = startCode;
     }
     payload['created_at'] = DateTime.now().toIso8601String();
 

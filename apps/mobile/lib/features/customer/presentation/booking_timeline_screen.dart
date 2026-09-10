@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../data/models/booking.dart';
+import '../controllers/customer_booking_controller.dart';
 
 /// Booking Timeline Screen — shows the full status progression for a booking.
 /// Navigated to from the Customer Bookings Tab when a booking card is tapped.
-class BookingTimelineScreen extends StatelessWidget {
+class BookingTimelineScreen extends ConsumerStatefulWidget {
   const BookingTimelineScreen({
     super.key,
     required this.booking,
@@ -13,7 +17,85 @@ class BookingTimelineScreen extends StatelessWidget {
   final Booking booking;
 
   @override
+  ConsumerState<BookingTimelineScreen> createState() => _BookingTimelineScreenState();
+}
+
+class _BookingTimelineScreenState extends ConsumerState<BookingTimelineScreen> {
+  late Razorpay _razorpay;
+  bool _isPaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    setState(() => _isPaying = true);
+    try {
+      await ref.read(customerDashboardProvider.notifier).updateBookingStatus(
+        widget.booking.id,
+        BookingStatus.paymentConfirmed,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment Successful!')),
+        );
+        Navigator.of(context).pop(); // Go back to dashboard
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating status: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPaying = false);
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment Failed: ${response.message}')),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('External Wallet: ${response.walletName}')),
+    );
+  }
+
+  void _openCheckout() {
+    final Map<String, Object> options = <String, Object>{
+      'key': 'rzp_test_rYQpXwQY', // Standard test key (dummy fallback)
+      'amount': widget.booking.totalAmount * 100, // in paise
+      'name': 'Jelp Cooperative',
+      'description': 'Payment for ${widget.booking.serviceTitle}',
+      'prefill': <String, String>{
+        'contact': widget.booking.customerName ?? '',
+        'email': 'customer@jelp.local'
+      }
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('Error opening Razorpay: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final Booking booking = widget.booking;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -44,7 +126,42 @@ class BookingTimelineScreen extends StatelessWidget {
               '${booking.workerName ?? 'Pending Worker'} • ${booking.serviceCategory}',
               style: const TextStyle(fontSize: 15, color: Colors.grey),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            if (booking.startCode != null && booking.status.isActive)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 32),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Text(
+                      'Share this Secret Code with Worker',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      booking.startCode!,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        letterSpacing: 12,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              const SizedBox(height: 32),
 
             // Timeline
             const Text(
@@ -155,19 +272,41 @@ class BookingTimelineScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Contact Worker Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.phone),
-                label: const Text('Contact Worker'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            // Contextual Actions
+            if (booking.status == BookingStatus.completed)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isPaying ? null : _openCheckout,
+                  icon: _isPaying
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.payment),
+                  label: Text(_isPaying ? 'Processing...' : 'Pay with Razorpay', style: const TextStyle(fontSize: 16)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              )
+            else if (booking.status.isActive)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.phone),
+                  label: const Text('Contact Worker'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 32),
           ],
         ),

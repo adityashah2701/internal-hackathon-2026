@@ -6,6 +6,8 @@ abstract final class AppRoutes {
 
   // Future Authentication Routes (Architecture readiness)
   static const String login = '/login';
+  static const String phoneLogin = '/phone-login';
+  static const String otpVerify = '/otp-verify';
   static const String register = '/register';
   static const String onboarding = '/onboarding';
   static const String roleSelection = '/role-selection';

@@ -190,6 +190,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // OR Divider
+                Row(
+                  children: <Widget>[
+                    Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Phone Login button
+                OutlinedButton.icon(
+                  onPressed: isLoading ? null : () => context.push(AppRoutes.phoneLogin),
+                  icon: const Icon(Icons.phone_android_outlined),
+                  label: const Text('Continue with Mobile Number', style: TextStyle(fontSize: 16)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 // Link back to Login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

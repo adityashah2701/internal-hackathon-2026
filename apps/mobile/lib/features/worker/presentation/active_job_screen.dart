@@ -26,17 +26,15 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
     super.dispose();
   }
 
-  Future<void> _updateStatus(BookingStatus newStatus, {String? otp}) async {
+  Future<void> _updateStatus(Booking booking, BookingStatus newStatus, {String? otp}) async {
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
 
     try {
-      // TODO: If OTP is required, validate it against the backend here.
-      // For MVP simulation, we just update the status if they entered '1234'.
-      if (otp != null && otp != '1234') {
-        throw Exception('Invalid OTP. Please ask the customer for the correct code.');
+      if (otp != null && otp != booking.startCode) {
+        throw Exception('Invalid PIN. Please ask the customer for the correct 4-digit secret code.');
       }
 
       await ref.read(workerDashboardProvider.notifier).updateBookingStatus(
@@ -157,7 +155,7 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: _isProcessing ? null : () => _updateStatus(BookingStatus.arrived),
+            onPressed: _isProcessing ? null : () => _updateStatus(booking, BookingStatus.arrived),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -208,7 +206,7 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
                       setState(() => _errorMessage = 'Please enter a 4-digit OTP');
                       return;
                     }
-                    _updateStatus(BookingStatus.inProgress, otp: _otpController.text);
+                    _updateStatus(booking, BookingStatus.inProgress, otp: _otpController.text);
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -234,7 +232,7 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: _isProcessing ? null : () => _updateStatus(BookingStatus.completed),
+            onPressed: _isProcessing ? null : () => _updateStatus(booking, BookingStatus.completed),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
               foregroundColor: Colors.white,

@@ -7,6 +7,8 @@ import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/phone_login_screen.dart';
+import '../../features/auth/presentation/otp_verification_screen.dart';
 import '../../features/common/presentation/splash_screen.dart';
 import '../../features/cooperative/presentation/cooperative_shell.dart';
 import '../../features/cooperative/presentation/tabs/cooperative_dashboard_tab.dart';
@@ -69,6 +71,17 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.phoneLogin,
+        builder: (BuildContext context, GoRouterState state) => const PhoneLoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.otpVerify,
+        builder: (BuildContext context, GoRouterState state) {
+          final String phone = state.extra as String? ?? '';
+          return OtpVerificationScreen(phone: phone);
+        },
       ),
       GoRoute(
         path: AppRoutes.register,
@@ -271,24 +284,30 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       final AppAuthState? authState = authAsync.value;
 
       // While checking session on launch, stay on splash
-      if (authState is AuthInitial || authState == null || authAsync.isLoading) {
+      if (authState is AuthInitial) {
         return location == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
+      // Fallback state if authAsync is loading and value is temporarily null
+      final AppAuthState effectiveState = authState ?? const AuthUnauthenticated();
+
       // 1. Unauthenticated: Force to Login or Register
-      if (authState is AuthUnauthenticated) {
-        final bool isAuthRoute = location == AppRoutes.login || location == AppRoutes.register;
+      if (effectiveState is AuthUnauthenticated) {
+        final bool isAuthRoute = location == AppRoutes.login || 
+                                 location == AppRoutes.register || 
+                                 location == AppRoutes.phoneLogin || 
+                                 location == AppRoutes.otpVerify;
         return isAuthRoute ? null : AppRoutes.login;
       }
 
       // 2. Onboarding Required: Force to Onboarding
-      if (authState is AuthOnboardingRequired) {
+      if (effectiveState is AuthOnboardingRequired) {
         return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
       }
 
       // 3. Authenticated & Onboarded: Direct to appropriate Role-Based Home
-      if (authState is AuthAuthenticated) {
-        final String roleHome = switch (authState.profile.role) {
+      if (effectiveState is AuthAuthenticated) {
+        final String roleHome = switch (effectiveState.profile.role) {
           UserRole.customer => AppRoutes.customerDashboard,
           UserRole.worker => AppRoutes.workerDashboard,
           UserRole.cooperativeAdmin => AppRoutes.cooperativeDashboard,
@@ -299,6 +318,8 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         final bool isOnEntryFlow = location == AppRoutes.splash ||
             location == AppRoutes.login ||
             location == AppRoutes.register ||
+            location == AppRoutes.phoneLogin ||
+            location == AppRoutes.otpVerify ||
             location == AppRoutes.onboarding ||
             location == AppRoutes.root;
 
@@ -313,10 +334,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         final bool isCoopFlow = location.startsWith('/cooperative');
         final bool isFedFlow = location.startsWith('/federation');
 
-        if (isCustomerFlow && authState.profile.role != UserRole.customer) return roleHome;
-        if (isWorkerFlow && authState.profile.role != UserRole.worker) return roleHome;
-        if (isCoopFlow && authState.profile.role != UserRole.cooperativeAdmin) return roleHome;
-        if (isFedFlow && authState.profile.role != UserRole.federationAdmin) return roleHome;
+        if (isCustomerFlow && effectiveState.profile.role != UserRole.customer) return roleHome;
+        if (isWorkerFlow && effectiveState.profile.role != UserRole.worker) return roleHome;
+        if (isCoopFlow && effectiveState.profile.role != UserRole.cooperativeAdmin) return roleHome;
+        if (isFedFlow && effectiveState.profile.role != UserRole.federationAdmin) return roleHome;
 
         return null;
       }

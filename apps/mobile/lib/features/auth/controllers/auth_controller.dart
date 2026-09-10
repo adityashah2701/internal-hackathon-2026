@@ -180,6 +180,63 @@ class AuthController extends Notifier<AsyncValue<AppAuthState>> {
     }
   }
 
+  Future<void> signInWithPhone({required String phone}) async {
+    state = const AsyncValue<AppAuthState>.loading();
+    // final IAuthRepository authRepo = ref.read(authRepositoryProvider);
+
+    try {
+      // HACKATHON BYPASS: Don't call Supabase OTP to avoid needing an SMS provider
+      // await authRepo.signInWithOtp(phone: phone);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      state = const AsyncValue<AppAuthState>.data(AuthUnauthenticated());
+    } on AppException catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(Failure.fromException(e), st);
+    } catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(
+        UnexpectedFailure(message: 'Sending OTP failed: ${e.toString()}'),
+        st,
+      );
+    }
+  }
+
+  Future<void> verifyOtp({required String phone, required String token}) async {
+    state = const AsyncValue<AppAuthState>.loading();
+    final IAuthRepository authRepo = ref.read(authRepositoryProvider);
+
+    try {
+      if (token == '123456') {
+        // HACKATHON BYPASS: Use email/password under the hood to get a real Supabase JWT session!
+        final String dummyEmail = '${phone.replaceAll('+', '')}@hackathon.local';
+        final String dummyPassword = 'mockPassword123!';
+        
+        sb.AuthResponse response;
+        try {
+          response = await authRepo.signInWithEmail(email: dummyEmail, password: dummyPassword);
+        } catch (_) {
+          // If sign in fails, they don't exist yet, so sign them up
+          response = await authRepo.signUpWithEmail(email: dummyEmail, password: dummyPassword);
+        }
+        
+        final sb.User? user = response.user;
+        if (user != null) {
+          await _loadProfileForUser(user);
+        } else {
+          state = const AsyncValue<AppAuthState>.data(AuthUnauthenticated());
+        }
+      } else {
+        throw const AuthorizationException(message: 'Invalid verification code. (Hint: Use 123456)');
+      }
+    } on AppException catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(Failure.fromException(e), st);
+    } catch (e, st) {
+      state = AsyncValue<AppAuthState>.error(
+        UnexpectedFailure(message: 'OTP verification failed: ${e.toString()}'),
+        st,
+      );
+    }
+  }
+
   Future<void> completeOnboarding({
     required String fullName,
     required String phoneNumber,

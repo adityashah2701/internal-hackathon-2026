@@ -24,6 +24,12 @@ abstract interface class IAuthRepository {
   });
 
   Future<void> signOut();
+
+  /// Sends an OTP to the given phone number.
+  Future<void> signInWithOtp({required String phone});
+
+  /// Verifies the OTP sent to the given phone number.
+  Future<sb.AuthResponse> verifyOtp({required String phone, required String token});
 }
 
 class SupabaseAuthRepository implements IAuthRepository {
@@ -99,6 +105,39 @@ class SupabaseAuthRepository implements IAuthRepository {
     } catch (e, st) {
       AppLogger.error('Unexpected error during sign up', error: e, stackTrace: st);
       throw UnexpectedException(message: 'Failed to sign up. Please try again.', originalError: e);
+    }
+  }
+
+  @override
+  Future<void> signInWithOtp({required String phone}) async {
+    try {
+      await _safeClient.auth.signInWithOtp(phone: phone.trim());
+      AppLogger.info('OTP sent to $phone');
+    } on sb.AuthException catch (e) {
+      AppLogger.error('AuthException during signInWithOtp', error: e);
+      throw AuthException(message: e.message, code: e.statusCode);
+    } catch (e, st) {
+      AppLogger.error('Unexpected error during signInWithOtp', error: e, stackTrace: st);
+      throw UnexpectedException(message: 'Failed to send OTP. Please try again.', originalError: e);
+    }
+  }
+
+  @override
+  Future<sb.AuthResponse> verifyOtp({required String phone, required String token}) async {
+    try {
+      final sb.AuthResponse response = await _safeClient.auth.verifyOTP(
+        type: sb.OtpType.sms,
+        phone: phone.trim(),
+        token: token.trim(),
+      );
+      AppLogger.info('OTP verified successfully for ${response.user?.id}');
+      return response;
+    } on sb.AuthException catch (e) {
+      AppLogger.error('AuthException during verifyOtp', error: e);
+      throw AuthException(message: e.message, code: e.statusCode);
+    } catch (e, st) {
+      AppLogger.error('Unexpected error during verifyOtp', error: e, stackTrace: st);
+      throw UnexpectedException(message: 'Failed to verify OTP. Please try again.', originalError: e);
     }
   }
 

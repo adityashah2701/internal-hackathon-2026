@@ -43,6 +43,7 @@ class Booking {
   const Booking({
     required this.id,
     required this.trackingCode,
+    this.startCode,
     required this.customerId,
     this.customerName,
     this.workerId,
@@ -72,6 +73,7 @@ class Booking {
 
   final String id;
   final String trackingCode;
+  final String? startCode;
   final String customerId;
   final String? customerName;
   final String? workerId;
@@ -101,6 +103,7 @@ class Booking {
   Booking copyWith({
     String? id,
     String? trackingCode,
+    String? startCode,
     String? customerId,
     String? customerName,
     String? workerId,
@@ -187,6 +190,7 @@ class Booking {
     return Booking(
       id: json['id'] as String? ?? '',
       trackingCode: json['tracking_code'] as String? ?? 'BK-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      startCode: json['start_code'] as String?,
       customerId: json['customer_id'] as String? ?? '',
       customerName: customerNameJoined,
       workerId: json['worker_id'] as String?,
@@ -219,6 +223,7 @@ class Booking {
     return <String, Object?>{
       'id': id,
       'tracking_code': trackingCode,
+      if (startCode != null) 'start_code': startCode,
       'customer_id': customerId,
       'worker_id': workerId,
       'cooperative_id': cooperativeId,
