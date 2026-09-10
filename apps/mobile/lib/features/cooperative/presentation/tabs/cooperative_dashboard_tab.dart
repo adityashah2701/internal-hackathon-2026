@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../data/models/worker_document.dart';
-import '../../../data/models/worker_profile.dart';
-import '../../auth/controllers/auth_controller.dart';
-import '../controllers/cooperative_admin_controller.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../data/models/worker_document.dart';
+import '../../../../data/models/worker_profile.dart';
+import '../../controllers/cooperative_admin_controller.dart';
 
-class CooperativeHomeScreen extends ConsumerStatefulWidget {
-  const CooperativeHomeScreen({super.key});
+class CooperativeDashboardTab extends ConsumerStatefulWidget {
+  const CooperativeDashboardTab({super.key});
 
   @override
-  ConsumerState<CooperativeHomeScreen> createState() => _CooperativeHomeScreenState();
+  ConsumerState<CooperativeDashboardTab> createState() => _CooperativeDashboardTabState();
 }
 
-class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
+class _CooperativeDashboardTabState extends ConsumerState<CooperativeDashboardTab> {
   @override
   Widget build(BuildContext context) {
     final CooperativeAdminState state = ref.watch(cooperativeAdminProvider);
@@ -61,12 +60,6 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Queue',
             onPressed: () => ref.read(cooperativeAdminProvider.notifier).loadWorkers(),
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => _confirmSignOut(context),
           ),
         ],
       ),
@@ -1150,31 +1143,6 @@ class _CooperativeHomeScreenState extends ConsumerState<CooperativeHomeScreen> {
                 ref.read(cooperativeAdminProvider.notifier).rejectWorker(workerId, reason);
               },
               child: const Text('Confirm Rejection'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _confirmSignOut(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogCtx) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out of the Cooperative Operations portal?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogCtx).pop();
-                ref.read(authControllerProvider.notifier).signOut();
-              },
-              child: const Text('Sign Out'),
             ),
           ],
         );

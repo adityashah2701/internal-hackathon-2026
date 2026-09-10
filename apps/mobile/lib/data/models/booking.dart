@@ -18,7 +18,7 @@ enum BookingStatus {
   final String description;
 
   /// Whether this status represents an active (in-flight) booking.
-  bool get isActive => this == requested || this == accepted || this == scheduled || this == inProgress;
+  bool get isActive => this == requested || this == accepted || this == scheduled || this == arrived || this == inProgress;
 
   /// Whether this status represents a terminal (final) state.
   bool get isTerminal => this == reviewed || this == cancelled || this == expired || this == rejected;

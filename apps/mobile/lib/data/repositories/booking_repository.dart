@@ -106,14 +106,14 @@ class SupabaseBookingRepository implements IBookingRepository {
   @override
   Future<List<Booking>> getCustomerBookings(String customerId, {int limit = 50, int offset = 0}) async {
     try {
-      final List<Map<String, Object?>> response = await _safeClient
+      final List<dynamic> response = await _safeClient
           .from('bookings')
           .select(_bookingSelectQuery)
           .eq('customer_id', customerId)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
-      return response.map(Booking.fromJson).toList();
+      return response.map((dynamic item) => Booking.fromJson(item as Map<String, Object?>)).toList();
     } catch (e) {
       AppLogger.warning('Error loading customer bookings: $e', tag: 'BookingRepo');
       return const <Booking>[];
@@ -123,14 +123,14 @@ class SupabaseBookingRepository implements IBookingRepository {
   @override
   Future<List<Booking>> getWorkerBookings(String workerId, {int limit = 50, int offset = 0}) async {
     try {
-      final List<Map<String, Object?>> response = await _safeClient
+      final List<dynamic> response = await _safeClient
           .from('bookings')
           .select(_bookingSelectQuery)
           .eq('worker_id', workerId)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
-      return response.map(Booking.fromJson).toList();
+      return response.map((dynamic item) => Booking.fromJson(item as Map<String, Object?>)).toList();
     } catch (e) {
       AppLogger.warning('Error loading worker bookings: $e', tag: 'BookingRepo');
       return const <Booking>[];
@@ -146,7 +146,7 @@ class SupabaseBookingRepository implements IBookingRepository {
   }) async {
     try {
       // Get bookings that are 'requested' and not yet assigned
-      final List<Map<String, Object?>> response = await _safeClient
+      final List<dynamic> response = await _safeClient
           .from('bookings')
           .select(_bookingSelectQuery)
           .eq('status', 'requested')
@@ -155,7 +155,7 @@ class SupabaseBookingRepository implements IBookingRepository {
           .order('created_at', ascending: true)  // FIFO
           .range(offset, offset + limit - 1);
 
-      return response.map(Booking.fromJson).toList();
+      return response.map((dynamic item) => Booking.fromJson(item as Map<String, Object?>)).toList();
     } catch (e) {
       AppLogger.warning('Error loading available bookings: $e', tag: 'BookingRepo');
       return const <Booking>[];

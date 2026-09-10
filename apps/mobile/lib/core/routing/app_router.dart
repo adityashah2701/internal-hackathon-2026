@@ -8,8 +8,14 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/common/presentation/splash_screen.dart';
-import '../../features/cooperative/presentation/cooperative_home_screen.dart';
-import '../../features/federation/presentation/federation_home_screen.dart';
+import '../../features/cooperative/presentation/cooperative_shell.dart';
+import '../../features/cooperative/presentation/tabs/cooperative_dashboard_tab.dart';
+import '../../features/cooperative/presentation/tabs/cooperative_profile_tab.dart';
+
+import '../../features/federation/presentation/federation_shell.dart';
+import '../../features/federation/presentation/tabs/federation_dashboard_tab.dart';
+import '../../features/federation/presentation/tabs/federation_profile_tab.dart';
+
 import '../../features/verification/presentation/verification_screen.dart';
 
 // Customer Shell & Tabs
@@ -186,15 +192,58 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         ],
       ),
 
-      // Cooperative Admin
-      GoRoute(
-        path: AppRoutes.cooperativeDashboard,
-        builder: (BuildContext context, GoRouterState state) => const CooperativeHomeScreen(),
+      // =======================================================
+      // Cooperative Stateful Shell Route (Bottom Navigation)
+      // =======================================================
+      StatefulShellRoute.indexedStack(
+        builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {
+          return CooperativeShell(navigationShell: navigationShell);
+        },
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.cooperativeDashboard,
+                builder: (BuildContext context, GoRouterState state) => const CooperativeDashboardTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '${AppRoutes.cooperativeDashboard}/profile',
+                builder: (BuildContext context, GoRouterState state) => const CooperativeProfileTab(),
+              ),
+            ],
+          ),
+        ],
       ),
-      // Federation Admin
-      GoRoute(
-        path: AppRoutes.federationDashboard,
-        builder: (BuildContext context, GoRouterState state) => const FederationHomeScreen(),
+
+      // =======================================================
+      // Federation Stateful Shell Route (Bottom Navigation)
+      // =======================================================
+      StatefulShellRoute.indexedStack(
+        builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {
+          return FederationShell(navigationShell: navigationShell);
+        },
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.federationDashboard,
+                builder: (BuildContext context, GoRouterState state) => const FederationDashboardTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '${AppRoutes.federationDashboard}/profile',
+                builder: (BuildContext context, GoRouterState state) => const FederationProfileTab(),
+              ),
+            ],
+          ),
+        ],
       ),
 
       // Developer Diagnostics & System Verification

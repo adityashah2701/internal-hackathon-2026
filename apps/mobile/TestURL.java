@@ -1,0 +1,1 @@
+import java.net.*; import java.io.*; public class TestURL { public static void main(String[] args) throws Exception { URL url = new URL("https://services.gradle.org/distributions/gradle-8.3-all.zip"); HttpURLConnection con = (HttpURLConnection) url.openConnection(); con.setInstanceFollowRedirects(true); con.getInputStream(); System.out.println("Success!"); } }

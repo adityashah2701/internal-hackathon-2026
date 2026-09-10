@@ -5,7 +5,7 @@ void main() {
   group('Booking Model Tests', () {
     test('BookingStatus parsing and dbValue works correctly', () {
       expect(BookingStatus.fromDbValue('requested'), equals(BookingStatus.requested));
-      expect(BookingStatus.fromDbValue('assigned'), equals(BookingStatus.accepted));
+      expect(BookingStatus.fromDbValue('accepted'), equals(BookingStatus.accepted));
       expect(BookingStatus.fromDbValue('in_progress'), equals(BookingStatus.inProgress));
       expect(BookingStatus.fromDbValue('completed'), equals(BookingStatus.completed));
       expect(BookingStatus.fromDbValue('cancelled'), equals(BookingStatus.cancelled));

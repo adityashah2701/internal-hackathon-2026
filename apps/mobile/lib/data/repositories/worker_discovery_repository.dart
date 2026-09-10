@@ -115,8 +115,7 @@ class SupabaseWorkerDiscoveryRepository implements IWorkerDiscoveryRepository {
       );
 
       return response
-          .cast<Map<String, Object?>>()
-          .map(DiscoveredWorker.fromJson)
+          .map((dynamic item) => DiscoveredWorker.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e, st) {
       AppLogger.error('Error finding nearby workers', error: e, stackTrace: st);

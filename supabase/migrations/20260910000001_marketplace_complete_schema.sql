@@ -449,8 +449,9 @@ begin
   -- Validate allowed transitions
   if not (
     (old.status = 'requested'           and new.status in ('accepted', 'rejected', 'cancelled', 'expired')) or
-    (old.status = 'accepted'            and new.status in ('scheduled', 'in_progress', 'cancelled')) or
-    (old.status = 'scheduled'           and new.status in ('in_progress', 'cancelled')) or
+    (old.status = 'accepted'            and new.status in ('scheduled', 'arrived', 'in_progress', 'cancelled')) or
+    (old.status = 'scheduled'           and new.status in ('arrived', 'in_progress', 'cancelled')) or
+    (old.status = 'arrived'             and new.status in ('in_progress', 'cancelled')) or
     (old.status = 'in_progress'         and new.status in ('completed', 'cancelled')) or
     (old.status = 'completed'           and new.status in ('payment_confirmed')) or
     (old.status = 'payment_confirmed'   and new.status in ('reviewed'))

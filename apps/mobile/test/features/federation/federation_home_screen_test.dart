@@ -7,7 +7,7 @@ import 'package:mobile/data/models/user_role.dart';
 import 'package:mobile/data/models/worker_profile.dart';
 import 'package:mobile/data/repositories/federation_admin_repository.dart';
 import 'package:mobile/features/auth/controllers/auth_controller.dart';
-import 'package:mobile/features/federation/presentation/federation_home_screen.dart';
+import 'package:mobile/features/federation/presentation/tabs/federation_dashboard_tab.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class TestFederationAdminRepository extends SupabaseFederationAdminRepository {
@@ -42,7 +42,7 @@ class TestFederationAdminRepository extends SupabaseFederationAdminRepository {
 }
 
 void main() {
-  testWidgets('FederationHomeScreen renders telemetry metrics and workforce directory',
+  testWidgets('FederationDashboardTab renders telemetry metrics and workforce directory',
       (WidgetTester tester) async {
     const String testAdminId = 'admin-fed-uuid-1';
     final UserProfile adminProfile = UserProfile(
@@ -79,7 +79,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: FederationHomeScreen(),
+          home: FederationDashboardTab(),
         ),
       ),
     );

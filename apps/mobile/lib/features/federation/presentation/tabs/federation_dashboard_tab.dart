@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../data/models/cooperative_society.dart';
-import '../../../data/models/worker_profile.dart';
-import '../../auth/controllers/auth_controller.dart';
-import '../controllers/federation_admin_controller.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../data/models/cooperative_society.dart';
+import '../../../../data/models/worker_profile.dart';
+import '../../controllers/federation_admin_controller.dart';
 
-class FederationHomeScreen extends ConsumerStatefulWidget {
-  const FederationHomeScreen({super.key});
+class FederationDashboardTab extends ConsumerStatefulWidget {
+  const FederationDashboardTab({super.key});
 
   @override
-  ConsumerState<FederationHomeScreen> createState() => _FederationHomeScreenState();
+  ConsumerState<FederationDashboardTab> createState() => _FederationDashboardTabState();
 }
 
-class _FederationHomeScreenState extends ConsumerState<FederationHomeScreen> {
+class _FederationDashboardTabState extends ConsumerState<FederationDashboardTab> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -48,11 +47,6 @@ class _FederationHomeScreenState extends ConsumerState<FederationHomeScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Metrics',
             onPressed: () => ref.read(federationAdminProvider.notifier).loadDashboard(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => _confirmSignOut(context),
           ),
         ],
       ),
@@ -563,31 +557,6 @@ class _FederationHomeScreenState extends ConsumerState<FederationHomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  void _confirmSignOut(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogCtx) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out of the Federation Portal?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogCtx).pop();
-                ref.read(authControllerProvider.notifier).signOut();
-              },
-              child: const Text('Sign Out'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

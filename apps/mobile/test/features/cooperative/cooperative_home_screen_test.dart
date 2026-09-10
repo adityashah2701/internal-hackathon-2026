@@ -6,7 +6,7 @@ import 'package:mobile/data/models/user_role.dart';
 import 'package:mobile/data/models/worker_profile.dart';
 import 'package:mobile/data/repositories/cooperative_admin_repository.dart';
 import 'package:mobile/features/auth/controllers/auth_controller.dart';
-import 'package:mobile/features/cooperative/presentation/cooperative_home_screen.dart';
+import 'package:mobile/features/cooperative/presentation/tabs/cooperative_dashboard_tab.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class TestCooperativeAdminRepository extends SupabaseCooperativeAdminRepository {
@@ -19,7 +19,7 @@ class TestCooperativeAdminRepository extends SupabaseCooperativeAdminRepository 
 }
 
 void main() {
-  testWidgets('CooperativeHomeScreen renders pending worker requests and review actions',
+  testWidgets('CooperativeDashboardTab renders pending worker requests and review actions',
       (WidgetTester tester) async {
     const String testAdminId = 'admin-coop-uuid-1';
     final UserProfile adminProfile = UserProfile(
@@ -67,7 +67,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: CooperativeHomeScreen(),
+          home: CooperativeDashboardTab(),
         ),
       ),
     );

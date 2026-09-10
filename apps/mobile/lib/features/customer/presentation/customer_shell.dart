@@ -38,7 +38,7 @@ class CustomerShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
             selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
-            label: 'Alerts',
+            label: 'Notifications',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

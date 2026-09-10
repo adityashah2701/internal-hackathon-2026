@@ -1,0 +1,1 @@
+public class TestIPv4 { public static void main(String[] args) throws Exception { try { new java.net.Socket("release-assets.githubusercontent.com", 443); System.out.println("release-assets OK"); } catch(Exception e) { System.out.println("release-assets FAIL: " + e); } } }
