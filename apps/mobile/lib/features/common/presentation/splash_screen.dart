@@ -112,7 +112,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       child: Icon(
                         Icons.handshake_rounded,
                         size: 52,
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                       ),
                     ),
                   ),

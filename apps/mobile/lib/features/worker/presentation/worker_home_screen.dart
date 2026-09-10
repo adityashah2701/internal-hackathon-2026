@@ -786,7 +786,7 @@ class _WorkerHomeScreenState extends ConsumerState<WorkerHomeScreen> {
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2),
             )
           : const Icon(Icons.send_rounded),
       label: Text(

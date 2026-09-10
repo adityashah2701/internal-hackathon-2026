@@ -131,7 +131,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                   width: double.infinity,
                   height: 160,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E3A8A),
+                    color: const Color(0xFF18181B),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Stack(
@@ -521,7 +521,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
@@ -839,7 +839,7 @@ class _BookingWizardModalState extends ConsumerState<_BookingWizardModal> {
                           ? const SizedBox(
                               height: 18,
                               width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                             )
                           : Text(_currentStep == 3 ? 'Confirm & Book Service' : 'Continue'),
                     ),

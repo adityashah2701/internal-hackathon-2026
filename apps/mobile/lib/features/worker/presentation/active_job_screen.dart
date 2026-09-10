@@ -160,12 +160,12 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
             onPressed: _isProcessing ? null : () => _updateStatus(BookingStatus.arrived),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isProcessing
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
                 : const Text('Mark as Arrived', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ],
@@ -212,12 +212,12 @@ class _ActiveJobScreenState extends ConsumerState<ActiveJobScreen> {
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isProcessing
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
                 : const Text('Verify & Start Job', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ],

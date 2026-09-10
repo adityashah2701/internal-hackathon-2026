@@ -209,7 +209,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               onPressed: _isProcessing ? null : _processRazorpayPayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -217,7 +217,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2),
                     )
                   : Text('Pay ₹${widget.booking.totalAmount}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),

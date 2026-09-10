@@ -559,7 +559,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                       ),
                     )
                   : const Row(

@@ -179,7 +179,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                             )
                           : Text(
                               wizard.currentStep == 2 ? 'Upload & Submit for Review' : 'Continue',
@@ -216,10 +216,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 ? const Icon(Icons.check, size: 16, color: Colors.white)
                 : Text(
                     '${stepIndex + 1}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: isActive ? AppColors.onPrimary : Colors.white,
                     ),
                   ),
           ),

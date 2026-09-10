@@ -11,18 +11,18 @@ abstract final class AppTheme {
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        onPrimary: Colors.white,
-        primaryContainer: Color(0xFFEEF2FF),
-        onPrimaryContainer: AppColors.primaryDark,
+        onPrimary: AppColors.onPrimary,
+        primaryContainer: Color(0xFFFEF3C7),
+        onPrimaryContainer: Color(0xFF78350F),
         secondary: AppColors.secondary,
         onSecondary: Colors.white,
-        secondaryContainer: Color(0xFFF5F3FF),
-        onSecondaryContainer: AppColors.secondaryDark,
+        secondaryContainer: Color(0xFFF4F4F5),
+        onSecondaryContainer: Color(0xFF18181B),
         surface: AppColors.surfaceLight,
         onSurface: AppColors.textPrimaryLight,
         onSurfaceVariant: AppColors.textSecondaryLight,
         outline: AppColors.borderLight,
-        outlineVariant: Color(0xFFF1F5F9),
+        outlineVariant: Color(0xFFE4E4E7),
         error: AppColors.error,
         onError: Colors.white,
       ),
@@ -64,7 +64,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -82,7 +82,7 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.onPrimary,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -90,15 +90,15 @@ abstract final class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           textStyle: const TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.borderLight, width: 1.0),
+          foregroundColor: const Color(0xFFD97706),
+          side: const BorderSide(color: AppColors.primary, width: 1.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -111,11 +111,35 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: const Color(0xFFD97706),
           textStyle: const TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surfaceLight,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+        iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Color(0xFFB45309));
+          }
+          return const IconThemeData(color: AppColors.textSecondaryLight);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFB45309),
+            );
+          }
+          return const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondaryLight,
+          );
+        }),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.borderLight,
@@ -149,18 +173,18 @@ abstract final class AppTheme {
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryLight,
-        onPrimary: Colors.white,
-        primaryContainer: Color(0xFF312E81),
-        onPrimaryContainer: Color(0xFFE0E7FF),
+        onPrimary: AppColors.onPrimary,
+        primaryContainer: Color(0xFF27272A),
+        onPrimaryContainer: Color(0xFFFDE68A),
         secondary: AppColors.secondaryLight,
         onSecondary: Colors.white,
-        secondaryContainer: Color(0xFF4C1D95),
-        onSecondaryContainer: Color(0xFFEDE9FE),
+        secondaryContainer: Color(0xFF27272A),
+        onSecondaryContainer: Color(0xFFE4E4E7),
         surface: AppColors.surfaceDark,
         onSurface: AppColors.textPrimaryDark,
         onSurfaceVariant: AppColors.textSecondaryDark,
         outline: AppColors.borderDark,
-        outlineVariant: Color(0xFF1E293B),
+        outlineVariant: Color(0xFF27272A),
         error: AppColors.error,
         onError: Colors.white,
       ),
@@ -202,7 +226,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -220,7 +244,7 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primaryLight,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.onPrimary,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -228,7 +252,7 @@ abstract final class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           textStyle: const TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
         ),
@@ -254,6 +278,30 @@ abstract final class AppTheme {
             fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        indicatorColor: AppColors.primaryLight.withValues(alpha: 0.2),
+        iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.primaryLight);
+          }
+          return const IconThemeData(color: AppColors.textSecondaryDark);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryLight,
+            );
+          }
+          return const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondaryDark,
+          );
+        }),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.borderDark,
