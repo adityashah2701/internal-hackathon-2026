@@ -30,6 +30,7 @@ enum BookingStatus {
   bool get canReview => this == paymentConfirmed;
 
   static BookingStatus fromDbValue(String? value) {
+    if (value == 'assigned') return BookingStatus.accepted;
     for (final BookingStatus s in BookingStatus.values) {
       if (s.dbValue == value) {
         return s;
